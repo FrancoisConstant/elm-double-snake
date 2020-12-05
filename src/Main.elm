@@ -9,8 +9,8 @@ import Json.Decode as Decode
 import List exposing (range)
 
 
-limit =
-    30
+size =
+    25
 
 
 
@@ -33,6 +33,7 @@ type Msg
 
 type alias Model =
     { game : Game
+    , score : Score
     , snake : Snake
     , foodPosition : Position
     , totalTime : Float
@@ -55,6 +56,10 @@ type alias Position =
     }
 
 
+type alias Score =
+    Int
+
+
 type Game
     = NOT_STARTED
     | WIP
@@ -72,6 +77,7 @@ init : flags -> ( Model, Cmd Msg )
 init _ =
     ( { -- UI
         game = NOT_STARTED
+      , score = 0
 
       -- timer / animations
       , totalTime = 0
@@ -169,15 +175,28 @@ doUpdateFrame timeDelta model =
 
         doesCrash =
             isSnakeCrashing futureSnake
+
+        score =
+            if doesSnakeEat && not doesCrash then
+                model.score + 1
+
+            else
+                model.score
     in
     if doesCrash then
         -- lost - don't update the position (so we still see the head)
-        ( model |> setGameOver |> updateTimes timeDelta True, Cmd.none )
+        ( model
+            |> setGameOver
+            |> setScore score
+            |> updateTimes timeDelta True
+        , Cmd.none
+        )
 
     else
         -- keep playing, update Snake position
         ( futureSnake
             |> asSnakeIn model
+            |> setScore score
             |> updateTimes timeDelta True
         , Cmd.none
         )
@@ -226,6 +245,7 @@ view model =
         WIP ->
             div []
                 [ stylesheet
+                , p [] [ text ("Score " ++ (model.score |> String.fromInt)) ]
                 , table
                     [ class "mt-24 ml-24 border-collapse" ]
                     (renderRows model)
@@ -235,6 +255,7 @@ view model =
             div [ class "bg-red-700" ]
                 [ stylesheet
                 , p [] [ text "Game over" ]
+                , p [] [ text ("Score " ++ (model.score |> String.fromInt)) ]
                 , table
                     [ class "mt-24 ml-24 border-collapse" ]
                     (renderRows model)
@@ -245,7 +266,7 @@ renderRows : Model -> List (Html Msg)
 renderRows model =
     let
         y_list =
-            range 0 limit
+            range 0 size
     in
     y_list
         |> List.map
@@ -256,7 +277,7 @@ renderColumns : Int -> Model -> List (Html Msg)
 renderColumns y model =
     let
         x_list =
-            range 0 limit
+            range 0 size
     in
     x_list
         |> List.map
@@ -406,8 +427,8 @@ isSnakeCrashing snake =
         _ =
             Debug.log "Pos" ( headPosition, snakeBodyPositions )
     in
-    (-- check table limits
-     (headPosition.x > limit || headPosition.x < 0 || headPosition.y > limit || headPosition.y < 0)
+    (-- check table sizes
+     (headPosition.x > size || headPosition.x < 0 || headPosition.y > size || headPosition.y < 0)
         -- own body
         || List.member headPosition snakeBodyPositions
      -- TODO: enemy
@@ -464,6 +485,11 @@ canUpdateDirection newDirection currentDirection =
 setGameOver : Model -> Model
 setGameOver model =
     { model | game = GAME_OVER }
+
+
+setScore : Score -> Model -> Model
+setScore score model =
+    { model | score = score }
 
 
 
