@@ -9,6 +9,10 @@ import Json.Decode as Decode
 import List exposing (range)
 
 
+limit =
+    30
+
+
 
 --
 -- MESSAGES
@@ -38,7 +42,10 @@ type alias Model =
 
 type alias Snake =
     { positions : List Position
-    , direction : Direction
+
+    -- TODO: should use a buffer of directions
+    , currentDirection : Direction
+    , nextDirection : Direction
     }
 
 
@@ -77,7 +84,10 @@ init _ =
                 , { x = 11, y = 10 }
                 , { x = 10, y = 10 }
                 ]
-            , direction = RIGHT
+
+            -- currentDirection is updated on each tick
+            , currentDirection = RIGHT
+            , nextDirection = RIGHT
             }
       , foodPosition = { x = 20, y = 20 }
       }
@@ -142,18 +152,35 @@ updateTimesOnly timeDelta model =
 doUpdateFrame : Float -> Model -> ( Model, Cmd Msg )
 doUpdateFrame timeDelta model =
     let
+        snake =
+            model.snake
+
+        snake2 =
+            { snake | currentDirection = snake.nextDirection }
+
         newHeadPosition =
-            getNewHeadPosition model.snake.positions model.snake.direction
+            getNewHeadPosition model.snake.positions model.snake.nextDirection
 
         doesSnakeEat =
             newHeadPosition == model.foodPosition
+
+        futureSnake =
+            updateSnakePosition doesSnakeEat snake2
+
+        doesCrash =
+            isSnakeCrashing futureSnake
     in
-    ( model.snake
-        |> updateSnakePosition doesSnakeEat
-        |> asSnakeIn model
-        |> updateTimes timeDelta True
-    , Cmd.none
-    )
+    if doesCrash then
+        -- lost - don't update the position (so we still see the head)
+        ( model |> setGameOver |> updateTimes timeDelta True, Cmd.none )
+
+    else
+        -- keep playing, update Snake position
+        ( futureSnake
+            |> asSnakeIn model
+            |> updateTimes timeDelta True
+        , Cmd.none
+        )
 
 
 buttonStartClicked : Model -> ( Model, Cmd Msg )
@@ -163,13 +190,13 @@ buttonStartClicked model =
 
 keyPushed : Direction -> Model -> ( Model, Cmd Msg )
 keyPushed newDirection model =
-    if canUpdateDirection newDirection model.snake.direction then
+    if canUpdateDirection newDirection model.snake.currentDirection then
         let
             snake =
                 model.snake
 
             newSnake =
-                { snake | direction = newDirection }
+                { snake | nextDirection = newDirection }
         in
         ( newSnake |> asSnakeIn model, Cmd.none )
 
@@ -205,14 +232,20 @@ view model =
                 ]
 
         GAME_OVER ->
-            p [] [ text "Game over" ]
+            div [ class "bg-red-700" ]
+                [ stylesheet
+                , p [] [ text "Game over" ]
+                , table
+                    [ class "mt-24 ml-24 border-collapse" ]
+                    (renderRows model)
+                ]
 
 
 renderRows : Model -> List (Html Msg)
 renderRows model =
     let
         y_list =
-            range 0 30
+            range 0 limit
     in
     y_list
         |> List.map
@@ -223,7 +256,7 @@ renderColumns : Int -> Model -> List (Html Msg)
 renderColumns y model =
     let
         x_list =
-            range 0 30
+            range 0 limit
     in
     x_list
         |> List.map
@@ -293,7 +326,7 @@ updateTimes deltaTime newFrame model =
 updateSnakePosition : Bool -> Snake -> Snake
 updateSnakePosition doesSnakeEat snake =
     { snake
-        | positions = updatePositions snake.positions snake.direction doesSnakeEat
+        | positions = updatePositions snake.positions snake.currentDirection doesSnakeEat
     }
 
 
@@ -361,6 +394,26 @@ isFoodOn position model =
     position == model.foodPosition
 
 
+isSnakeCrashing : Snake -> Bool
+isSnakeCrashing snake =
+    let
+        headPosition =
+            snake.positions |> List.head |> Maybe.withDefault { x = -1, y = -1 }
+
+        snakeBodyPositions =
+            snake.positions |> List.drop 1
+
+        _ =
+            Debug.log "Pos" ( headPosition, snakeBodyPositions )
+    in
+    (-- check table limits
+     (headPosition.x > limit || headPosition.x < 0 || headPosition.y > limit || headPosition.y < 0)
+        -- own body
+        || List.member headPosition snakeBodyPositions
+     -- TODO: enemy
+    )
+
+
 stylesheet : Html.Html msg
 stylesheet =
     Html.node "link"
@@ -406,6 +459,11 @@ canUpdateDirection newDirection currentDirection =
         && not (newDirection == DOWN && currentDirection == UP)
         && not (newDirection == LEFT && currentDirection == RIGHT)
         && not (newDirection == RIGHT && currentDirection == LEFT)
+
+
+setGameOver : Model -> Model
+setGameOver model =
+    { model | game = GAME_OVER }
 
 
 
