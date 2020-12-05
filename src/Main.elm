@@ -7,6 +7,7 @@ import Html.Attributes exposing (class, href, rel)
 import Html.Events exposing (onClick)
 import Json.Decode as Decode
 import List exposing (range)
+import Random
 
 
 size =
@@ -23,6 +24,7 @@ type Msg
     = Frame Float
     | ButtonStartClicked
     | KeyPushed Direction
+    | NewFoodPosition Position
 
 
 
@@ -132,6 +134,9 @@ update msg model =
         KeyPushed direction ->
             keyPushed direction model
 
+        NewFoodPosition position ->
+            updateFoodPosition position model
+
 
 updateFrame : Float -> Model -> ( Model, Cmd Msg )
 updateFrame timeDelta model =
@@ -182,6 +187,13 @@ doUpdateFrame timeDelta model =
 
             else
                 model.score
+
+        cmd =
+            if doesSnakeEat && not doesCrash then
+                Random.generate NewFoodPosition getRandomPosition
+
+            else
+                Cmd.none
     in
     if doesCrash then
         -- lost - don't update the position (so we still see the head)
@@ -198,8 +210,21 @@ doUpdateFrame timeDelta model =
             |> asSnakeIn model
             |> setScore score
             |> updateTimes timeDelta True
-        , Cmd.none
+        , cmd
         )
+
+
+updateFoodPosition : Position -> Model -> ( Model, Cmd Msg )
+updateFoodPosition position model =
+    let
+        isOnSnake =
+            List.member position model.snake.positions
+    in
+    if isOnSnake then
+        ( model, Random.generate NewFoodPosition getRandomPosition )
+
+    else
+        ( { model | foodPosition = position }, Cmd.none )
 
 
 buttonStartClicked : Model -> ( Model, Cmd Msg )
@@ -490,6 +515,16 @@ setGameOver model =
 setScore : Score -> Model -> Model
 setScore score model =
     { model | score = score }
+
+
+getRandomNumber : Random.Generator Int
+getRandomNumber =
+    Random.int 1 size
+
+
+getRandomPosition : Random.Generator Position
+getRandomPosition =
+    Random.map2 Position getRandomNumber getRandomNumber
 
 
 
