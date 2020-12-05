@@ -30,6 +30,7 @@ type Msg
 type alias Model =
     { game : Game
     , snake : Snake
+    , foodPosition : Position
     , totalTime : Float
     , elapsedTimeSinceLastUpdate : Float
     }
@@ -78,6 +79,7 @@ init _ =
                 ]
             , direction = RIGHT
             }
+      , foodPosition = { x = 20, y = 20 }
       }
     , Cmd.none
     )
@@ -139,8 +141,15 @@ updateTimesOnly timeDelta model =
 
 doUpdateFrame : Float -> Model -> ( Model, Cmd Msg )
 doUpdateFrame timeDelta model =
+    let
+        newHeadPosition =
+            getNewHeadPosition model.snake.positions model.snake.direction
+
+        doesSnakeEat =
+            newHeadPosition == model.foodPosition
+    in
     ( model.snake
-        |> updateSnakePosition
+        |> updateSnakePosition doesSnakeEat
         |> asSnakeIn model
         |> updateTimes timeDelta True
     , Cmd.none
@@ -230,12 +239,18 @@ renderCase position model =
         showSnakeHead =
             isSnakeHead position model
 
+        showFood =
+            not showSnake && isFoodOn position model
+
         color =
             if showSnakeHead then
                 "bg-blue-600"
 
             else if showSnake then
                 "bg-blue-400"
+
+            else if showFood then
+                "bg-green-500"
 
             else
                 "bg-gray-300"
@@ -275,26 +290,33 @@ updateTimes deltaTime newFrame model =
     }
 
 
-updateSnakePosition : Snake -> Snake
-updateSnakePosition snake =
+updateSnakePosition : Bool -> Snake -> Snake
+updateSnakePosition doesSnakeEat snake =
     { snake
-        | positions = updatePositions snake.positions snake.direction
+        | positions = updatePositions snake.positions snake.direction doesSnakeEat
     }
 
 
-updatePositions : List Position -> Direction -> List Position
-updatePositions positions direction =
+updatePositions : List Position -> Direction -> Bool -> List Position
+updatePositions positions direction doesSnakeEat =
     let
         newHeadPosition =
             getNewHeadPosition positions direction
     in
-    positions
-        -- Remove latest position
-        |> List.reverse
-        |> List.drop 1
-        |> List.reverse
-        -- Add new head at the first position
-        |> List.append [ newHeadPosition ]
+    if doesSnakeEat then
+        positions
+            -- Add new head at the first position
+            |> List.append [ newHeadPosition ]
+
+    else
+        positions
+            -- Move latest position to the new head position:
+            -- 1.Remove latest position
+            |> List.reverse
+            |> List.drop 1
+            |> List.reverse
+            -- 2.Add new head at the first position
+            |> List.append [ newHeadPosition ]
 
 
 getNewHeadPosition : List Position -> Direction -> Position
@@ -332,6 +354,11 @@ isSnakeHead : Position -> Model -> Bool
 isSnakeHead position model =
     position
         == ((model.snake.positions |> List.head) |> Maybe.withDefault { x = -1, y = -1 })
+
+
+isFoodOn : Position -> Model -> Bool
+isFoodOn position model =
+    position == model.foodPosition
 
 
 stylesheet : Html.Html msg
