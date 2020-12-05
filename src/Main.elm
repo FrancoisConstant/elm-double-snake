@@ -2,8 +2,9 @@ module Main exposing (main)
 
 import Browser
 import Browser.Events
-import Html exposing (Html, div, table, td, text, tr)
+import Html exposing (Html, button, div, p, table, td, text, tr)
 import Html.Attributes exposing (class, href, rel)
+import Html.Events exposing (onClick)
 import Json.Decode as Decode
 import List exposing (range)
 
@@ -16,6 +17,7 @@ import List exposing (range)
 
 type Msg
     = Frame Float
+    | ButtonStartClicked
     | KeyPushed Direction
 
 
@@ -26,7 +28,8 @@ type Msg
 
 
 type alias Model =
-    { snake : Snake
+    { game : Game
+    , snake : Snake
     , totalTime : Float
     , elapsedTimeSinceLastUpdate : Float
     }
@@ -44,6 +47,12 @@ type alias Position =
     }
 
 
+type Game
+    = NOT_STARTED
+    | WIP
+    | GAME_OVER
+
+
 type Direction
     = UP
     | RIGHT
@@ -53,8 +62,14 @@ type Direction
 
 init : flags -> ( Model, Cmd Msg )
 init _ =
-    ( { totalTime = 0
+    ( { -- UI
+        game = NOT_STARTED
+
+      -- timer / animations
+      , totalTime = 0
       , elapsedTimeSinceLastUpdate = 0
+
+      -- snakes and points
       , snake =
             { positions =
                 [ { x = 12, y = 10 }
@@ -93,18 +108,25 @@ update msg model =
         Frame time ->
             updateFrame time model
 
+        ButtonStartClicked ->
+            buttonStartClicked model
+
         KeyPushed direction ->
             keyPushed direction model
 
 
 updateFrame : Float -> Model -> ( Model, Cmd Msg )
 updateFrame timeDelta model =
-    let
-        elapsedTimeSinceLastUpdate =
-            model.elapsedTimeSinceLastUpdate + timeDelta
-    in
-    if elapsedTimeSinceLastUpdate >= 100 then
-        doUpdateFrame timeDelta model
+    if model.game == WIP then
+        let
+            elapsedTimeSinceLastUpdate =
+                model.elapsedTimeSinceLastUpdate + timeDelta
+        in
+        if elapsedTimeSinceLastUpdate >= 100 then
+            doUpdateFrame timeDelta model
+
+        else
+            updateTimesOnly timeDelta model
 
     else
         updateTimesOnly timeDelta model
@@ -123,6 +145,11 @@ doUpdateFrame timeDelta model =
         |> updateTimes timeDelta True
     , Cmd.none
     )
+
+
+buttonStartClicked : Model -> ( Model, Cmd Msg )
+buttonStartClicked model =
+    ( { model | game = WIP }, Cmd.none )
 
 
 keyPushed : Direction -> Model -> ( Model, Cmd Msg )
@@ -149,12 +176,27 @@ keyPushed newDirection model =
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ stylesheet
-        , table
-            [ class "mt-24 ml-24 border-collapse" ]
-            (renderRows model)
-        ]
+    case model.game of
+        NOT_STARTED ->
+            div []
+                [ stylesheet
+                , button
+                    [ onClick ButtonStartClicked
+                    , class "mt-24 ml-24 bg-blue-300 pt-2 pr-4 pb-2 pl-4 text-white uppercase font-bold"
+                    ]
+                    [ text "Start" ]
+                ]
+
+        WIP ->
+            div []
+                [ stylesheet
+                , table
+                    [ class "mt-24 ml-24 border-collapse" ]
+                    (renderRows model)
+                ]
+
+        GAME_OVER ->
+            p [] [ text "Game over" ]
 
 
 renderRows : Model -> List (Html Msg)
