@@ -8,14 +8,7 @@ import Html.Events exposing (onClick)
 import Json.Decode as Decode
 import List exposing (range)
 import Random
-
-
-sizeX =
-    42
-
-
-sizeY =
-    24
+import Settings exposing (bottomLimit, leftLimit, rightLimit, sizeX, sizeY, topLimit)
 
 
 
@@ -212,8 +205,17 @@ doUpdateFrame timeDelta model =
             else
                 model.score
 
+        newOtherSnakeDirection =
+            getNewOtherSnakeDirection otherSnakeHead model.otherSnake.currentDirection model.foodPosition
+
+        otherSnake3 =
+            { futureOtherSnake
+                | currentDirection = newOtherSnakeDirection
+                , nextDirection = newOtherSnakeDirection
+            }
+
         cmd =
-            if doesSnakeEat && not doesCrash then
+            if (doesSnakeEat || doesOtherSnakeEat) && not doesCrash then
                 Random.generate NewFoodPosition getRandomPosition
 
             else
@@ -232,7 +234,7 @@ doUpdateFrame timeDelta model =
         -- keep playing, update Snake position
         ( model
             |> setSnake futureSnake
-            |> setOtherSnake futureOtherSnake
+            |> setOtherSnake otherSnake3
             |> setScore score
             |> updateTimes timeDelta True
         , cmd
@@ -532,6 +534,124 @@ isSnakeCrashing snake otherSnake =
             (\position -> List.member position otherSnake.positions)
             snake.positions
     )
+
+
+closeToRight : Position -> Bool
+closeToRight headPosition =
+    headPosition.x > rightLimit
+
+
+closeToLeft : Position -> Bool
+closeToLeft headPosition =
+    headPosition.x < leftLimit
+
+
+closeToBottom : Position -> Bool
+closeToBottom headPosition =
+    headPosition.y > bottomLimit
+
+
+closeToTop : Position -> Bool
+closeToTop headPosition =
+    headPosition.y < topLimit
+
+
+getNewOtherSnakeDirection : Position -> Direction -> Position -> Direction
+getNewOtherSnakeDirection headPosition currentDirection foodPosition =
+    let
+        right =
+            closeToRight headPosition
+
+        left =
+            closeToLeft headPosition
+
+        top =
+            closeToTop headPosition
+
+        bottom =
+            closeToBottom headPosition
+
+        foodOnTheRight =
+            foodPosition.x > headPosition.x
+
+        foodOnTheLeft =
+            foodPosition.x < headPosition.x
+
+        foodAbove =
+            foodPosition.y < headPosition.y
+
+        foodUnder =
+            foodPosition.y > headPosition.y
+    in
+    case currentDirection of
+        -- logic to avoid walls OR get closer to the food
+        UP ->
+            if top then
+                if left then
+                    RIGHT
+
+                else
+                    LEFT
+
+            else if foodAbove then
+                currentDirection
+
+            else if foodOnTheRight then
+                RIGHT
+
+            else
+                LEFT
+
+        RIGHT ->
+            if right then
+                if top then
+                    DOWN
+
+                else
+                    UP
+
+            else if foodOnTheRight then
+                currentDirection
+
+            else if foodAbove then
+                UP
+
+            else
+                DOWN
+
+        DOWN ->
+            if bottom then
+                if right then
+                    LEFT
+
+                else
+                    RIGHT
+
+            else if foodUnder then
+                currentDirection
+
+            else if foodOnTheRight then
+                RIGHT
+
+            else
+                LEFT
+
+        LEFT ->
+            if left then
+                if bottom then
+                    UP
+
+                else
+                    DOWN
+
+            else if foodOnTheLeft then
+                currentDirection
+
+            else if foodAbove then
+                UP
+
+            else
+                DOWN
 
 
 stylesheet : Html.Html msg
