@@ -2,16 +2,20 @@ module Main exposing (main)
 
 import Browser
 import Browser.Events
-import Html exposing (Html, button, div, p, table, td, text, tr)
-import Html.Attributes exposing (class, href, rel)
+import Html exposing (Html, button, div, p, span, table, td, text, tr)
+import Html.Attributes exposing (class, href, rel, style)
 import Html.Events exposing (onClick)
 import Json.Decode as Decode
 import List exposing (range)
 import Random
 
 
-size =
-    25
+sizeX =
+    42
+
+
+sizeY =
+    24
 
 
 
@@ -277,42 +281,54 @@ keyPushed newDirection model =
 
 view : Model -> Html Msg
 view model =
-    case model.game of
-        NOT_STARTED ->
-            div []
-                [ stylesheet
-                , button
-                    [ onClick ButtonStartClicked
-                    , class "mt-24 ml-24 bg-blue-300 pt-2 pr-4 pb-2 pl-4 text-white uppercase font-bold"
-                    ]
-                    [ text "Start" ]
+    div [ class "min-w-full p-24 pt-36 bg-gray-100" ]
+        [ stylesheet
+        , div [ class "bg-whiter", style "width" "80%" ]
+            [ table
+                [ class "border-collapse bg-gradient-to-r from-blue-600 to-blue-300 float-left" ]
+                (renderRows model)
+            , viewMenu model
+            ]
+        , div
+            [ class "clear-both" ]
+            [ p [ class "pt-24 text-center text-gray-500" ]
+                [ text
+                    ("Use arrows to move. "
+                        ++ "Avoid the walls. "
+                        ++ "Avoid the black snake. "
+                        ++ "Eat the apples."
+                    )
                 ]
+            ]
+        ]
 
-        WIP ->
-            div []
-                [ stylesheet
-                , p [] [ text ("Score " ++ (model.score |> String.fromInt)) ]
-                , table
-                    [ class "mt-24 ml-24 border-collapse" ]
-                    (renderRows model)
-                ]
 
-        GAME_OVER ->
-            div [ class "bg-red-700" ]
-                [ stylesheet
-                , p [] [ text "Game over" ]
-                , p [] [ text ("Score " ++ (model.score |> String.fromInt)) ]
-                , table
-                    [ class "mt-24 ml-24 border-collapse" ]
-                    (renderRows model)
+viewMenu : Model -> Html Msg
+viewMenu model =
+    div [ class "float-left w-64 h-full min-h-full bg-white" ]
+        ((if model.game == NOT_STARTED then
+            [ button
+                [ onClick ButtonStartClicked
+                , class "mt-24 ml-24 bg-blue-300 pt-2 pr-4 pb-2 pl-4 text-white uppercase font-bold"
                 ]
+                [ text "Start" ]
+            ]
+
+          else
+            [ span [] [] ]
+         )
+            ++ [ p
+                    [ class "p-6 text-9xl text-right text-blue-300 mt-48" ]
+                    [ text (model.score |> String.fromInt) ]
+               ]
+        )
 
 
 renderRows : Model -> List (Html Msg)
 renderRows model =
     let
         y_list =
-            range 0 size
+            range 0 sizeY
     in
     y_list
         |> List.map
@@ -323,7 +339,7 @@ renderColumns : Int -> Model -> List (Html Msg)
 renderColumns y model =
     let
         x_list =
-            range 0 size
+            range 0 sizeX
     in
     x_list
         |> List.map
@@ -348,27 +364,39 @@ renderCase position model =
         showOtherSnakeHead =
             isSnakeHead position model.otherSnake
 
+        -- shadow
+        under =
+            { position | y = position.y - 1 }
+
+        showShadow =
+            isSnakeOn under model.snake
+                || isFoodOn under model
+                || isSnakeOn under model.otherSnake
+
         color =
             if showSnakeHead then
-                "bg-blue-600"
+                "bg-white"
 
             else if showSnake then
-                "bg-blue-400"
+                "bg-gray-100"
 
             else if showFood then
-                "bg-green-500"
+                "bg-green-300"
 
             else if showOtherSnakeHead then
-                "bg-red-600"
+                "bg-black"
 
             else if showOtherSnake then
-                "bg-red-300"
+                "bg-gray-800"
+
+            else if showShadow then
+                "bg-blue-500"
 
             else
-                "bg-gray-300"
+                ""
     in
     td
-        [ class ("w-6 h-6 border-solid border-2 border-light-blue-500 " ++ color) ]
+        [ class ("w-6 h-6 " ++ color) ]
         [ text " " ]
 
 
@@ -496,7 +524,7 @@ isSnakeCrashing snake otherSnake =
             Debug.log "Pos" ( headPosition, snakeBodyPositions )
     in
     (-- check table sizes
-     (headPosition.x > size || headPosition.x < 0 || headPosition.y > size || headPosition.y < 0)
+     (headPosition.x > sizeX || headPosition.x < 0 || headPosition.y > sizeY || headPosition.y < 0)
         -- own body
         || List.member headPosition snakeBodyPositions
         -- enemy
@@ -563,14 +591,19 @@ setScore score model =
     { model | score = score }
 
 
-getRandomNumber : Random.Generator Int
-getRandomNumber =
-    Random.int 1 size
+getRandomXPosition : Random.Generator Int
+getRandomXPosition =
+    Random.int 1 sizeX
+
+
+getRandomYPosition : Random.Generator Int
+getRandomYPosition =
+    Random.int 1 sizeY
 
 
 getRandomPosition : Random.Generator Position
 getRandomPosition =
-    Random.map2 Position getRandomNumber getRandomNumber
+    Random.map2 Position getRandomXPosition getRandomYPosition
 
 
 
