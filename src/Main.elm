@@ -37,6 +37,7 @@ type alias Model =
     { game : Game
     , score : Score
     , snake : Snake
+    , otherSnake : Snake
     , foodPosition : Position
     , totalTime : Float
     , elapsedTimeSinceLastUpdate : Float
@@ -90,14 +91,24 @@ init _ =
             { positions =
                 [ { x = 12, y = 10 }
                 , { x = 11, y = 10 }
-                , { x = 10, y = 10 }
                 ]
 
             -- currentDirection is updated on each tick
             , currentDirection = RIGHT
             , nextDirection = RIGHT
             }
-      , foodPosition = { x = 20, y = 20 }
+      , otherSnake =
+            { positions =
+                [ { x = 20, y = 20 }
+                , { x = 21, y = 20 }
+                , { x = 22, y = 20 }
+                ]
+
+            -- currentDirection is updated on each tick
+            , currentDirection = RIGHT
+            , nextDirection = RIGHT
+            }
+      , foodPosition = { x = 15, y = 15 }
       }
     , Cmd.none
     )
@@ -178,8 +189,17 @@ doUpdateFrame timeDelta model =
         futureSnake =
             updateSnakePosition doesSnakeEat snake2
 
+        otherSnakeHead =
+            getNewHeadPosition model.otherSnake.positions model.otherSnake.nextDirection
+
+        doesOtherSnakeEat =
+            otherSnakeHead == model.foodPosition
+
+        futureOtherSnake =
+            updateSnakePosition doesOtherSnakeEat model.otherSnake
+
         doesCrash =
-            isSnakeCrashing futureSnake
+            isSnakeCrashing futureSnake model.otherSnake
 
         score =
             if doesSnakeEat && not doesCrash then
@@ -206,8 +226,9 @@ doUpdateFrame timeDelta model =
 
     else
         -- keep playing, update Snake position
-        ( futureSnake
-            |> asSnakeIn model
+        ( model
+            |> setSnake futureSnake
+            |> setOtherSnake futureOtherSnake
             |> setScore score
             |> updateTimes timeDelta True
         , cmd
@@ -313,13 +334,19 @@ renderCase : Position -> Model -> Html Msg
 renderCase position model =
     let
         showSnake =
-            isSnakeOn position model
+            isSnakeOn position model.snake
 
         showSnakeHead =
-            isSnakeHead position model
+            isSnakeHead position model.snake
 
         showFood =
             not showSnake && isFoodOn position model
+
+        showOtherSnake =
+            isSnakeOn position model.otherSnake
+
+        showOtherSnakeHead =
+            isSnakeHead position model.otherSnake
 
         color =
             if showSnakeHead then
@@ -330,6 +357,12 @@ renderCase position model =
 
             else if showFood then
                 "bg-green-500"
+
+            else if showOtherSnakeHead then
+                "bg-red-600"
+
+            else if showOtherSnake then
+                "bg-red-300"
 
             else
                 "bg-gray-300"
@@ -348,6 +381,16 @@ renderCase position model =
 asSnakeIn : Model -> Snake -> Model
 asSnakeIn model snake =
     { model | snake = snake }
+
+
+setSnake : Snake -> Model -> Model
+setSnake snake model =
+    { model | snake = snake }
+
+
+setOtherSnake : Snake -> Model -> Model
+setOtherSnake otherSnake model =
+    { model | otherSnake = otherSnake }
 
 
 updateTimes : Float -> Bool -> Model -> Model
@@ -424,15 +467,15 @@ getNewHeadPosition positions direction =
                     { position | x = position.x - 1 }
 
 
-isSnakeOn : Position -> Model -> Bool
-isSnakeOn position model =
-    List.member position model.snake.positions
+isSnakeOn : Position -> Snake -> Bool
+isSnakeOn position snake =
+    List.member position snake.positions
 
 
-isSnakeHead : Position -> Model -> Bool
-isSnakeHead position model =
+isSnakeHead : Position -> Snake -> Bool
+isSnakeHead position snake =
     position
-        == ((model.snake.positions |> List.head) |> Maybe.withDefault { x = -1, y = -1 })
+        == ((snake.positions |> List.head) |> Maybe.withDefault { x = -1, y = -1 })
 
 
 isFoodOn : Position -> Model -> Bool
@@ -440,8 +483,8 @@ isFoodOn position model =
     position == model.foodPosition
 
 
-isSnakeCrashing : Snake -> Bool
-isSnakeCrashing snake =
+isSnakeCrashing : Snake -> Snake -> Bool
+isSnakeCrashing snake otherSnake =
     let
         headPosition =
             snake.positions |> List.head |> Maybe.withDefault { x = -1, y = -1 }
@@ -456,7 +499,10 @@ isSnakeCrashing snake =
      (headPosition.x > size || headPosition.x < 0 || headPosition.y > size || headPosition.y < 0)
         -- own body
         || List.member headPosition snakeBodyPositions
-     -- TODO: enemy
+        -- enemy
+        || List.any
+            (\position -> List.member position otherSnake.positions)
+            snake.positions
     )
 
 
