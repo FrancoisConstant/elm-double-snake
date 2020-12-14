@@ -45,10 +45,7 @@ type alias Model =
 
 type alias Snake =
     { positions : List Position
-
-    -- TODO: should use a buffer of directions
-    , currentDirection : Direction
-    , nextDirection : Direction
+    , directions : List Direction
     }
 
 
@@ -93,16 +90,15 @@ init _ =
       , totalTime = 0
       , elapsedTimeSinceLastUpdate = 0
 
-      -- snakes and points
+      -- snakes and apples
       , snake =
             { positions =
                 [ { x = 5, y = 5 }
                 , { x = 6, y = 5 }
                 ]
 
-            -- currentDirection is updated on each tick
-            , currentDirection = RIGHT
-            , nextDirection = RIGHT
+            -- updated on each tick
+            , directions = [ RIGHT ]
             }
       , otherSnake =
             { positions =
@@ -110,9 +106,8 @@ init _ =
                 , { x = 21, y = 20 }
                 ]
 
-            -- currentDirection is updated on each tick
-            , currentDirection = RIGHT
-            , nextDirection = RIGHT
+            -- updated on each tick
+            , directions = [ RIGHT ]
             }
       , apples =
             Dict.fromList
@@ -189,10 +184,10 @@ doUpdateFrame timeDelta model =
             model.snake
 
         snake2 =
-            { snake | currentDirection = snake.nextDirection }
+            { snake | directions = removePreviousDirection snake.directions }
 
         newHeadPosition =
-            getNewHeadPosition model.snake.positions model.snake.nextDirection
+            getNewHeadPosition model.snake.positions (getDirection model.snake)
 
         doesSnakeEat =
             List.member newHeadPosition (getApplePositions model)
@@ -201,7 +196,7 @@ doUpdateFrame timeDelta model =
             updateSnakePosition doesSnakeEat snake2
 
         otherSnakeHead =
-            getNewHeadPosition model.otherSnake.positions model.otherSnake.nextDirection
+            getNewHeadPosition model.otherSnake.positions (getDirection model.otherSnake)
 
         doesOtherSnakeEat =
             List.member otherSnakeHead (getApplePositions model)
@@ -220,12 +215,11 @@ doUpdateFrame timeDelta model =
                 model.score
 
         newOtherSnakeDirection =
-            getNewOtherSnakeDirection otherSnakeHead model.otherSnake.currentDirection (getApplePositions model)
+            getNewOtherSnakeDirection otherSnakeHead (getDirection model.otherSnake) (getApplePositions model)
 
         otherSnake3 =
             { futureOtherSnake
-                | currentDirection = newOtherSnakeDirection
-                , nextDirection = newOtherSnakeDirection
+                | directions = [ newOtherSnakeDirection ]
             }
 
         appleToReplaceKey =
@@ -291,15 +285,17 @@ buttonStartClicked model =
     ( { model | game = WIP }, Cmd.none )
 
 
+{-| Add the direction pushed to the snake-directions-buffer if possible
+-}
 keyPushed : Direction -> Model -> ( Model, Cmd Msg )
 keyPushed newDirection model =
-    if canUpdateDirection newDirection model.snake.currentDirection then
+    if canUpdateDirection newDirection model.snake.directions then
         let
             snake =
                 model.snake
 
             newSnake =
-                { snake | nextDirection = newDirection }
+                { snake | directions = snake.directions ++ [ newDirection ] }
         in
         ( newSnake |> asSnakeIn model, Cmd.none )
 
@@ -477,7 +473,7 @@ updateTimes deltaTime newFrame model =
 updateSnakePosition : Bool -> Snake -> Snake
 updateSnakePosition doesSnakeEat snake =
     { snake
-        | positions = updatePositions snake.positions snake.currentDirection doesSnakeEat
+        | positions = updatePositions snake.positions (getDirection snake) doesSnakeEat
     }
 
 
@@ -726,14 +722,39 @@ toDirection string =
             RIGHT
 
 
-canUpdateDirection : Direction -> Direction -> Bool
-canUpdateDirection newDirection currentDirection =
-    -- Make sure the player cannot reverse the direction
-    (newDirection /= currentDirection)
-        && not (newDirection == UP && currentDirection == DOWN)
-        && not (newDirection == DOWN && currentDirection == UP)
-        && not (newDirection == LEFT && currentDirection == RIGHT)
-        && not (newDirection == RIGHT && currentDirection == LEFT)
+{-| Making sure the player cannot reverse the direction.
+-}
+canUpdateDirection : Direction -> List Direction -> Bool
+canUpdateDirection newDirection directions =
+    let
+        latestDirection =
+            List.reverse directions |> List.head |> Maybe.withDefault LEFT
+    in
+    (newDirection /= latestDirection)
+        && not (newDirection == UP && latestDirection == DOWN)
+        && not (newDirection == DOWN && latestDirection == UP)
+        && not (newDirection == LEFT && latestDirection == RIGHT)
+        && not (newDirection == RIGHT && latestDirection == LEFT)
+
+
+{-| First direction is the oldest one.
+Remove it if there are other directions in the buffer.
+Keep it if not.
+-}
+removePreviousDirection : List Direction -> List Direction
+removePreviousDirection directions =
+    if List.length directions > 1 then
+        List.drop 1 directions
+
+    else
+        directions
+
+
+getDirection : Snake -> Direction
+getDirection snake =
+    snake.directions
+        |> List.head
+        |> Maybe.withDefault RIGHT
 
 
 setGameOver : Model -> Model
