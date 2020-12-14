@@ -3,7 +3,7 @@ module Main exposing (main)
 import Browser
 import Browser.Events
 import Dict exposing (Dict)
-import Html exposing (Html, button, div, p, span, table, td, text, tr)
+import Html exposing (Html, br, button, div, p, span, table, td, text, tr)
 import Html.Attributes exposing (class, href, rel, style)
 import Html.Events exposing (onClick)
 import Json.Decode as Decode
@@ -311,36 +311,28 @@ keyPushed newDirection model =
 
 view : Model -> Html Msg
 view model =
-    div [ class "min-w-full p-24 pt-36 bg-gray-100" ]
-        [ stylesheet
-        , div [ class "bg-whiter", style "width" "80%" ]
-            [ table
-                [ class "border-collapse bg-gradient-to-r from-blue-600 to-blue-300 float-left" ]
+    div [ class "" ]
+        [ div [ class "main" ]
+            [ viewMenu model
+            , table
+                [ class "snake-table" ]
                 (renderRows model)
-            , viewMenu model
             ]
         , div
-            [ class "clear-both" ]
-            [ p [ class "pt-24 text-center text-gray-500" ]
-                [ text
-                    ("Use arrows to move. "
-                        ++ "Avoid the walls. "
-                        ++ "Avoid the black snake. "
-                        ++ "Eat the apples."
-                    )
-                ]
+            [ class "info" ]
+            [ p [] [ text "Use arrows to move." ]
+            , p [] [ text "Avoid the walls. Avoid the black snake." ]
+            , p [] [ text "Eat the apples." ]
             ]
         ]
 
 
 viewMenu : Model -> Html Msg
 viewMenu model =
-    div [ class "float-left w-64 h-full min-h-full bg-white" ]
+    div [ class "menu" ]
         ((if model.game == NOT_STARTED then
             [ button
-                [ onClick ButtonStartClicked
-                , class "mt-24 ml-24 bg-blue-300 pt-2 pr-4 pb-2 pl-4 text-white uppercase font-bold"
-                ]
+                [ onClick ButtonStartClicked ]
                 [ text "Start" ]
             ]
 
@@ -348,7 +340,7 @@ viewMenu model =
             [ span [] [] ]
          )
             ++ [ p
-                    [ class "p-6 text-9xl text-right text-blue-300 mt-48" ]
+                    [ class "score" ]
                     [ text (model.score |> String.fromInt) ]
                ]
         )
@@ -405,22 +397,22 @@ renderCase position model =
 
         color =
             if showSnakeHead then
-                "bg-white"
+                "snake-head"
 
             else if showSnake then
-                "bg-gray-100"
+                "snake-body"
 
             else if showApple then
-                "bg-green-300"
+                "apple"
 
             else if showOtherSnakeHead then
-                "bg-black"
+                "snake-2-head"
 
             else if showOtherSnake then
-                "bg-gray-800"
+                "snake-2-body"
 
             else if showShadow then
-                "bg-blue-500"
+                "shadow"
 
             else
                 ""
@@ -683,15 +675,6 @@ getNewOtherSnakeDirection headPosition currentDirection applePositions =
 
             else
                 DOWN
-
-
-stylesheet : Html.Html msg
-stylesheet =
-    Html.node "link"
-        [ rel "stylesheet"
-        , href "https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css"
-        ]
-        []
 
 
 keyDecoder : Decode.Decoder Direction
