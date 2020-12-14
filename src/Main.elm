@@ -187,7 +187,7 @@ doUpdateFrame timeDelta model =
             { snake | directions = removePreviousDirection snake.directions }
 
         newHeadPosition =
-            getNewHeadPosition model.snake.positions (getDirection model.snake)
+            getNewHeadPosition model.snake.positions (getDirection snake2)
 
         doesSnakeEat =
             List.member newHeadPosition (getApplePositions model)
