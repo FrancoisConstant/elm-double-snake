@@ -2,6 +2,7 @@ module Main exposing (main)
 
 import Browser
 import Browser.Events
+import Dict exposing (Dict)
 import Html exposing (Html, button, div, p, span, table, td, text, tr)
 import Html.Attributes exposing (class, href, rel, style)
 import Html.Events exposing (onClick)
@@ -35,7 +36,8 @@ type alias Model =
     , score : Score
     , snake : Snake
     , otherSnake : Snake
-    , foodPosition : Position
+    , foods : Dict FoodKey Food
+    , foodToReplaceKey : FoodKey
     , totalTime : Float
     , elapsedTimeSinceLastUpdate : Float
     }
@@ -54,6 +56,14 @@ type alias Position =
     { x : Int
     , y : Int
     }
+
+
+type alias Food =
+    Position
+
+
+type alias FoodKey =
+    Int
 
 
 type alias Score =
@@ -86,8 +96,8 @@ init _ =
       -- snakes and points
       , snake =
             { positions =
-                [ { x = 12, y = 10 }
-                , { x = 11, y = 10 }
+                [ { x = 5, y = 5 }
+                , { x = 6, y = 5 }
                 ]
 
             -- currentDirection is updated on each tick
@@ -98,14 +108,18 @@ init _ =
             { positions =
                 [ { x = 20, y = 20 }
                 , { x = 21, y = 20 }
-                , { x = 22, y = 20 }
                 ]
 
             -- currentDirection is updated on each tick
             , currentDirection = RIGHT
             , nextDirection = RIGHT
             }
-      , foodPosition = { x = 15, y = 15 }
+      , foods =
+            Dict.fromList
+                [ ( 1, { x = 14, y = 18 } )
+                , ( 2, { x = 8, y = 6 } )
+                ]
+      , foodToReplaceKey = 1
       }
     , Cmd.none
     )
@@ -181,7 +195,7 @@ doUpdateFrame timeDelta model =
             getNewHeadPosition model.snake.positions model.snake.nextDirection
 
         doesSnakeEat =
-            newHeadPosition == model.foodPosition
+            List.member newHeadPosition (getFoodPositions model)
 
         futureSnake =
             updateSnakePosition doesSnakeEat snake2
@@ -190,7 +204,7 @@ doUpdateFrame timeDelta model =
             getNewHeadPosition model.otherSnake.positions model.otherSnake.nextDirection
 
         doesOtherSnakeEat =
-            otherSnakeHead == model.foodPosition
+            List.member otherSnakeHead (getFoodPositions model)
 
         futureOtherSnake =
             updateSnakePosition doesOtherSnakeEat model.otherSnake
@@ -206,13 +220,24 @@ doUpdateFrame timeDelta model =
                 model.score
 
         newOtherSnakeDirection =
-            getNewOtherSnakeDirection otherSnakeHead model.otherSnake.currentDirection model.foodPosition
+            getNewOtherSnakeDirection otherSnakeHead model.otherSnake.currentDirection (getFoodPositions model)
 
         otherSnake3 =
             { futureOtherSnake
                 | currentDirection = newOtherSnakeDirection
                 , nextDirection = newOtherSnakeDirection
             }
+
+        foodToReplaceKey =
+            let
+                food1 =
+                    Maybe.withDefault { x = -1, y = -1 } (model.foods |> Dict.get 1)
+            in
+            if food1 == newHeadPosition || food1 == otherSnakeHead then
+                1
+
+            else
+                2
 
         cmd =
             if (doesSnakeEat || doesOtherSnakeEat) && not doesCrash then
@@ -231,8 +256,9 @@ doUpdateFrame timeDelta model =
         )
 
     else
-        -- keep playing, update Snake position
+        -- keep playing, update Snakes' position
         ( model
+            |> setFoodToReplaceKey foodToReplaceKey
             |> setSnake futureSnake
             |> setOtherSnake otherSnake3
             |> setScore score
@@ -242,16 +268,22 @@ doUpdateFrame timeDelta model =
 
 
 updateFoodPosition : Position -> Model -> ( Model, Cmd Msg )
-updateFoodPosition position model =
+updateFoodPosition newPosition model =
     let
-        isOnSnake =
-            List.member position model.snake.positions
+        isOnAnySnake =
+            List.member newPosition (model.snake.positions ++ model.otherSnake.positions)
     in
-    if isOnSnake then
+    if isOnAnySnake then
         ( model, Random.generate NewFoodPosition getRandomPosition )
 
     else
-        ( { model | foodPosition = position }, Cmd.none )
+        ( model
+            |> setFoods
+                (model.foods
+                    |> Dict.update model.foodToReplaceKey (\_ -> Just newPosition)
+                )
+        , Cmd.none
+        )
 
 
 buttonStartClicked : Model -> ( Model, Cmd Msg )
@@ -510,7 +542,7 @@ isSnakeHead position snake =
 
 isFoodOn : Position -> Model -> Bool
 isFoodOn position model =
-    position == model.foodPosition
+    List.member position (getFoodPositions model)
 
 
 isSnakeCrashing : Snake -> Snake -> Bool
@@ -556,9 +588,12 @@ closeToTop headPosition =
     headPosition.y < topLimit
 
 
-getNewOtherSnakeDirection : Position -> Direction -> Position -> Direction
-getNewOtherSnakeDirection headPosition currentDirection foodPosition =
+getNewOtherSnakeDirection : Position -> Direction -> List Position -> Direction
+getNewOtherSnakeDirection headPosition currentDirection foodPositions =
     let
+        foodPosition =
+            foodPositions |> List.head |> Maybe.withDefault { x = 1, y = 1 }
+
         right =
             closeToRight headPosition
 
@@ -709,6 +744,21 @@ setGameOver model =
 setScore : Score -> Model -> Model
 setScore score model =
     { model | score = score }
+
+
+getFoodPositions : Model -> List Position
+getFoodPositions model =
+    model.foods |> Dict.values
+
+
+setFoods : Dict FoodKey Food -> Model -> Model
+setFoods foods model =
+    { model | foods = foods }
+
+
+setFoodToReplaceKey : FoodKey -> Model -> Model
+setFoodToReplaceKey foodToReplaceKey model =
+    { model | foodToReplaceKey = foodToReplaceKey }
 
 
 getRandomXPosition : Random.Generator Int
