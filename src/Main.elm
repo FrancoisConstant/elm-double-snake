@@ -22,7 +22,7 @@ type Msg
     = Frame Float
     | ButtonStartClicked
     | KeyPushed Direction
-    | NewFoodPosition Position
+    | NewApplePosition Position
 
 
 
@@ -36,8 +36,8 @@ type alias Model =
     , score : Score
     , snake : Snake
     , otherSnake : Snake
-    , foods : Dict FoodKey Food
-    , foodToReplaceKey : FoodKey
+    , apples : Dict AppleKey Apple
+    , appleToReplaceKey : AppleKey
     , totalTime : Float
     , elapsedTimeSinceLastUpdate : Float
     }
@@ -58,11 +58,11 @@ type alias Position =
     }
 
 
-type alias Food =
+type alias Apple =
     Position
 
 
-type alias FoodKey =
+type alias AppleKey =
     Int
 
 
@@ -114,12 +114,12 @@ init _ =
             , currentDirection = RIGHT
             , nextDirection = RIGHT
             }
-      , foods =
+      , apples =
             Dict.fromList
                 [ ( 1, { x = 14, y = 18 } )
                 , ( 2, { x = 8, y = 6 } )
                 ]
-      , foodToReplaceKey = 1
+      , appleToReplaceKey = 1
       }
     , Cmd.none
     )
@@ -156,8 +156,8 @@ update msg model =
         KeyPushed direction ->
             keyPushed direction model
 
-        NewFoodPosition position ->
-            updateFoodPosition position model
+        NewApplePosition position ->
+            updateApplePosition position model
 
 
 updateFrame : Float -> Model -> ( Model, Cmd Msg )
@@ -195,7 +195,7 @@ doUpdateFrame timeDelta model =
             getNewHeadPosition model.snake.positions model.snake.nextDirection
 
         doesSnakeEat =
-            List.member newHeadPosition (getFoodPositions model)
+            List.member newHeadPosition (getApplePositions model)
 
         futureSnake =
             updateSnakePosition doesSnakeEat snake2
@@ -204,7 +204,7 @@ doUpdateFrame timeDelta model =
             getNewHeadPosition model.otherSnake.positions model.otherSnake.nextDirection
 
         doesOtherSnakeEat =
-            List.member otherSnakeHead (getFoodPositions model)
+            List.member otherSnakeHead (getApplePositions model)
 
         futureOtherSnake =
             updateSnakePosition doesOtherSnakeEat model.otherSnake
@@ -220,7 +220,7 @@ doUpdateFrame timeDelta model =
                 model.score
 
         newOtherSnakeDirection =
-            getNewOtherSnakeDirection otherSnakeHead model.otherSnake.currentDirection (getFoodPositions model)
+            getNewOtherSnakeDirection otherSnakeHead model.otherSnake.currentDirection (getApplePositions model)
 
         otherSnake3 =
             { futureOtherSnake
@@ -228,12 +228,12 @@ doUpdateFrame timeDelta model =
                 , nextDirection = newOtherSnakeDirection
             }
 
-        foodToReplaceKey =
+        appleToReplaceKey =
             let
-                food1 =
-                    Maybe.withDefault { x = -1, y = -1 } (model.foods |> Dict.get 1)
+                apple1 =
+                    Maybe.withDefault { x = -1, y = -1 } (model.apples |> Dict.get 1)
             in
-            if food1 == newHeadPosition || food1 == otherSnakeHead then
+            if apple1 == newHeadPosition || apple1 == otherSnakeHead then
                 1
 
             else
@@ -241,7 +241,7 @@ doUpdateFrame timeDelta model =
 
         cmd =
             if (doesSnakeEat || doesOtherSnakeEat) && not doesCrash then
-                Random.generate NewFoodPosition getRandomPosition
+                Random.generate NewApplePosition getRandomPosition
 
             else
                 Cmd.none
@@ -258,7 +258,7 @@ doUpdateFrame timeDelta model =
     else
         -- keep playing, update Snakes' position
         ( model
-            |> setFoodToReplaceKey foodToReplaceKey
+            |> setAppleToReplaceKey appleToReplaceKey
             |> setSnake futureSnake
             |> setOtherSnake otherSnake3
             |> setScore score
@@ -267,20 +267,20 @@ doUpdateFrame timeDelta model =
         )
 
 
-updateFoodPosition : Position -> Model -> ( Model, Cmd Msg )
-updateFoodPosition newPosition model =
+updateApplePosition : Position -> Model -> ( Model, Cmd Msg )
+updateApplePosition newPosition model =
     let
         isOnAnySnake =
             List.member newPosition (model.snake.positions ++ model.otherSnake.positions)
     in
     if isOnAnySnake then
-        ( model, Random.generate NewFoodPosition getRandomPosition )
+        ( model, Random.generate NewApplePosition getRandomPosition )
 
     else
         ( model
-            |> setFoods
-                (model.foods
-                    |> Dict.update model.foodToReplaceKey (\_ -> Just newPosition)
+            |> setApples
+                (model.apples
+                    |> Dict.update model.appleToReplaceKey (\_ -> Just newPosition)
                 )
         , Cmd.none
         )
@@ -389,8 +389,8 @@ renderCase position model =
         showSnakeHead =
             isSnakeHead position model.snake
 
-        showFood =
-            not showSnake && isFoodOn position model
+        showApple =
+            not showSnake && isAppleOn position model
 
         showOtherSnake =
             isSnakeOn position model.otherSnake
@@ -404,7 +404,7 @@ renderCase position model =
 
         showShadow =
             isSnakeOn under model.snake
-                || isFoodOn under model
+                || isAppleOn under model
                 || isSnakeOn under model.otherSnake
 
         color =
@@ -414,7 +414,7 @@ renderCase position model =
             else if showSnake then
                 "bg-gray-100"
 
-            else if showFood then
+            else if showApple then
                 "bg-green-300"
 
             else if showOtherSnakeHead then
@@ -540,9 +540,9 @@ isSnakeHead position snake =
         == ((snake.positions |> List.head) |> Maybe.withDefault { x = -1, y = -1 })
 
 
-isFoodOn : Position -> Model -> Bool
-isFoodOn position model =
-    List.member position (getFoodPositions model)
+isAppleOn : Position -> Model -> Bool
+isAppleOn position model =
+    List.member position (getApplePositions model)
 
 
 isSnakeCrashing : Snake -> Snake -> Bool
@@ -589,10 +589,10 @@ closeToTop headPosition =
 
 
 getNewOtherSnakeDirection : Position -> Direction -> List Position -> Direction
-getNewOtherSnakeDirection headPosition currentDirection foodPositions =
+getNewOtherSnakeDirection headPosition currentDirection applePositions =
     let
-        foodPosition =
-            foodPositions |> List.head |> Maybe.withDefault { x = 1, y = 1 }
+        applePosition =
+            applePositions |> List.head |> Maybe.withDefault { x = 1, y = 1 }
 
         right =
             closeToRight headPosition
@@ -606,20 +606,20 @@ getNewOtherSnakeDirection headPosition currentDirection foodPositions =
         bottom =
             closeToBottom headPosition
 
-        foodOnTheRight =
-            foodPosition.x > headPosition.x
+        appleOnTheRight =
+            applePosition.x > headPosition.x
 
-        foodOnTheLeft =
-            foodPosition.x < headPosition.x
+        appleOnTheLeft =
+            applePosition.x < headPosition.x
 
-        foodAbove =
-            foodPosition.y < headPosition.y
+        appleAbove =
+            applePosition.y < headPosition.y
 
-        foodUnder =
-            foodPosition.y > headPosition.y
+        appleUnder =
+            applePosition.y > headPosition.y
     in
     case currentDirection of
-        -- logic to avoid walls OR get closer to the food
+        -- logic to avoid walls OR get closer to the apple
         UP ->
             if top then
                 if left then
@@ -628,10 +628,10 @@ getNewOtherSnakeDirection headPosition currentDirection foodPositions =
                 else
                     LEFT
 
-            else if foodAbove then
+            else if appleAbove then
                 currentDirection
 
-            else if foodOnTheRight then
+            else if appleOnTheRight then
                 RIGHT
 
             else
@@ -645,10 +645,10 @@ getNewOtherSnakeDirection headPosition currentDirection foodPositions =
                 else
                     UP
 
-            else if foodOnTheRight then
+            else if appleOnTheRight then
                 currentDirection
 
-            else if foodAbove then
+            else if appleAbove then
                 UP
 
             else
@@ -662,10 +662,10 @@ getNewOtherSnakeDirection headPosition currentDirection foodPositions =
                 else
                     RIGHT
 
-            else if foodUnder then
+            else if appleUnder then
                 currentDirection
 
-            else if foodOnTheRight then
+            else if appleOnTheRight then
                 RIGHT
 
             else
@@ -679,10 +679,10 @@ getNewOtherSnakeDirection headPosition currentDirection foodPositions =
                 else
                     DOWN
 
-            else if foodOnTheLeft then
+            else if appleOnTheLeft then
                 currentDirection
 
-            else if foodAbove then
+            else if appleAbove then
                 UP
 
             else
@@ -746,19 +746,19 @@ setScore score model =
     { model | score = score }
 
 
-getFoodPositions : Model -> List Position
-getFoodPositions model =
-    model.foods |> Dict.values
+getApplePositions : Model -> List Position
+getApplePositions model =
+    model.apples |> Dict.values
 
 
-setFoods : Dict FoodKey Food -> Model -> Model
-setFoods foods model =
-    { model | foods = foods }
+setApples : Dict AppleKey Apple -> Model -> Model
+setApples apples model =
+    { model | apples = apples }
 
 
-setFoodToReplaceKey : FoodKey -> Model -> Model
-setFoodToReplaceKey foodToReplaceKey model =
-    { model | foodToReplaceKey = foodToReplaceKey }
+setAppleToReplaceKey : AppleKey -> Model -> Model
+setAppleToReplaceKey appleToReplaceKey model =
+    { model | appleToReplaceKey = appleToReplaceKey }
 
 
 getRandomXPosition : Random.Generator Int
