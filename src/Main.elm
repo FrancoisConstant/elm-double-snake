@@ -413,47 +413,30 @@ viewColumns y model =
 viewCell : Position -> Model -> Html Msg
 viewCell position model =
     let
-        showSnake =
-            isSnakeOn position model.snake
-
-        showSnakeHead =
-            isSnakeHead position model.snake
-
-        showApple =
-            not showSnake && isAppleOn position model
-
-        showOtherSnake =
-            isSnakeOn position model.otherSnake
-
-        showOtherSnakeHead =
-            isSnakeHead position model.otherSnake
-
-        -- shadow
         under =
             { position | y = position.y - 1 }
 
-        showShadow =
-            isSnakeOn under model.snake
-                || isAppleOn under model
-                || isSnakeOn under model.otherSnake
-
         color =
-            if showSnakeHead then
+            if isSnakeHead position model.snake then
                 "snake-head"
 
-            else if showSnake then
+            else if isSnakeOn position model.snake then
                 "snake-body"
 
-            else if showApple then
+            else if isAppleOn position model then
                 "apple"
 
-            else if showOtherSnakeHead then
+            else if isSnakeHead position model.otherSnake then
                 "snake-2-head"
 
-            else if showOtherSnake then
+            else if isSnakeOn position model.otherSnake then
                 "snake-2-body"
 
-            else if showShadow then
+            else if
+                isSnakeOn under model.snake
+                    || isAppleOn under model
+                    || isSnakeOn under model.otherSnake
+            then
                 "shadow"
 
             else
