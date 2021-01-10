@@ -2,8 +2,7 @@ module Main exposing (main)
 
 import Browser
 import Browser.Events
-import Dict exposing (Dict)
-import Html exposing (Html, button, div, p, span, strong, table, td, text, tr)
+import Html exposing (Html, button, div, p, strong, table, td, text, tr)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
 import Json.Decode as Decode
@@ -53,8 +52,14 @@ type alias Model =
     , score : Score
     , snake : Snake
     , otherSnake : Snake
-    , apples : Dict AppleKey Apple
-    , appleToReplaceKey : AppleKey -- next apple replaced when generating a new one
+
+    -- apples
+    , apple1 : Apple
+    , apple2 : Apple
+    , replaceApple1 : Bool
+    , replaceApple2 : Bool
+
+    -- frame rate
     , totalTime : Float
     , elapsedTimeSinceLastUpdate : Float
     }
@@ -99,7 +104,7 @@ type Key
 
 init : flags -> ( Model, Cmd Msg )
 init _ =
-    ( getDefaultModel NOT_STARTED, Cmd.none )
+    ( getDefaultModel NOT_STARTED, generateTwoNewApplesPositions )
 
 
 {-| Model when starting OR re-starting the game
@@ -125,9 +130,10 @@ getDefaultModel game =
         }
 
     -- apples
-    , apples =
-        Dict.fromList [ ( 1, Position 14 18 ), ( 2, Position 8 6 ) ]
-    , appleToReplaceKey = 1
+    , apple1 = Position 49 49 -- non-sense positions - replaced via the commands
+    , apple2 = Position 50 50
+    , replaceApple1 = True
+    , replaceApple2 = True
     }
 
 
@@ -158,7 +164,7 @@ update msg model =
             ( { model | game = WIP }, Cmd.none )
 
         ButtonReStartClicked ->
-            ( getDefaultModel WIP, Cmd.none )
+            ( getDefaultModel WIP, generateTwoNewApplesPositions )
 
         Frame time ->
             updateFrame time model
@@ -236,24 +242,6 @@ doUpdateFrame timeDelta model =
             { futureOtherSnake
                 | directions = [ newOtherSnakeDirection ]
             }
-
-        appleToReplaceKey =
-            let
-                apple1 =
-                    Maybe.withDefault (Position -1 -1) (model.apples |> Dict.get 1)
-            in
-            if apple1 == newHeadPosition || apple1 == otherSnakeHead then
-                1
-
-            else
-                2
-
-        cmd =
-            if (doesSnakeEat || doesOtherSnakeEat) && not doesCrash then
-                generateRandomPosition NewApplePosition
-
-            else
-                Cmd.none
     in
     if doesCrash then
         -- lost - don't update the position
@@ -266,9 +254,27 @@ doUpdateFrame timeDelta model =
         )
 
     else
+        let
+            replaceApple1 =
+                List.member model.apple1 [ newHeadPosition, otherSnakeHead ]
+
+            replaceApple2 =
+                List.member model.apple2 [ newHeadPosition, otherSnakeHead ]
+
+            cmd =
+                if replaceApple1 && replaceApple2 && not doesCrash then
+                    generateTwoNewApplesPositions
+
+                else if (replaceApple1 || replaceApple2) && not doesCrash then
+                    generateNewApplePosition
+
+                else
+                    Cmd.none
+        in
         -- keep playing, update Snakes' positions
         ( model
-            |> setAppleToReplaceKey appleToReplaceKey
+            |> setReplaceApple1 replaceApple1
+            |> setReplaceApple2 replaceApple2
             |> setSnake futureSnake
             |> setOtherSnake otherSnake3
             |> setScore score
@@ -284,16 +290,21 @@ updateApplePosition newPosition model =
             List.member newPosition (model.snake.positions ++ model.otherSnake.positions)
     in
     if isOnAnySnake then
-        ( model, generateRandomPosition NewApplePosition )
+        ( model, generateNewApplePosition )
 
     else
-        ( model
-            |> setApples
-                (model.apples
-                    |> Dict.update model.appleToReplaceKey (\_ -> Just newPosition)
-                )
-        , Cmd.none
-        )
+        let
+            newModel =
+                if model.replaceApple1 then
+                    model |> setApple1 newPosition |> setReplaceApple1 False
+
+                else if model.replaceApple2 then
+                    model |> setApple2 newPosition |> setReplaceApple2 False
+
+                else
+                    model
+        in
+        ( newModel, Cmd.none )
 
 
 {-| On user input, either start the game; pause the game or handle the new
@@ -330,7 +341,7 @@ updateKeyPushed key model =
 
                 GAME_OVER ->
                     -- re-start
-                    ( getDefaultModel WIP, Cmd.none )
+                    ( getDefaultModel WIP, generateTwoNewApplesPositions )
 
 
 
@@ -507,7 +518,7 @@ getNewHeadPosition positions direction =
     in
     case maybeSnakeHead of
         Nothing ->
-            { x = 0, y = 0 }
+            Position 0 0
 
         Just position ->
             -- 0, 0 in top-left corner
@@ -565,7 +576,7 @@ getNewOtherSnakeDirection : Position -> Direction -> List Position -> Direction
 getNewOtherSnakeDirection headPosition currentDirection applePositions =
     let
         applePosition =
-            applePositions |> List.head |> Maybe.withDefault { x = 1, y = 1 }
+            applePositions |> List.head |> Maybe.withDefault (Position 1 1)
 
         right =
             isCloseToRight headPosition
@@ -592,7 +603,7 @@ getNewOtherSnakeDirection headPosition currentDirection applePositions =
             isUnder applePosition headPosition
     in
     case currentDirection of
-        -- logic to avoid walls OR get closer to the apple
+        -- logic to avoid walls OR to get closer to the apple
         UP ->
             if top then
                 if left then
@@ -738,14 +749,37 @@ setScore score model =
 
 getApplePositions : Model -> List Position
 getApplePositions model =
-    model.apples |> Dict.values
+    [ model.apple1, model.apple2 ]
 
 
-setApples : Dict AppleKey Apple -> Model -> Model
-setApples apples model =
-    { model | apples = apples }
+setApple1 : Apple -> Model -> Model
+setApple1 apple model =
+    { model | apple1 = apple }
 
 
-setAppleToReplaceKey : AppleKey -> Model -> Model
-setAppleToReplaceKey appleToReplaceKey model =
-    { model | appleToReplaceKey = appleToReplaceKey }
+setApple2 : Apple -> Model -> Model
+setApple2 apple model =
+    { model | apple2 = apple }
+
+
+setReplaceApple1 : Bool -> Model -> Model
+setReplaceApple1 replace model =
+    { model | replaceApple1 = replace }
+
+
+setReplaceApple2 : Bool -> Model -> Model
+setReplaceApple2 replace model =
+    { model | replaceApple2 = replace }
+
+
+generateNewApplePosition : Cmd Msg
+generateNewApplePosition =
+    generateRandomPosition NewApplePosition
+
+
+generateTwoNewApplesPositions : Cmd Msg
+generateTwoNewApplesPositions =
+    Cmd.batch
+        [ generateRandomPosition NewApplePosition
+        , generateRandomPosition NewApplePosition
+        ]
