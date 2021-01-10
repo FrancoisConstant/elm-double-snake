@@ -6923,88 +6923,102 @@ var $elm$html$Html$Events$onClick = function (msg) {
 		'click',
 		$elm$json$Json$Decode$succeed(msg));
 };
-var $elm$html$Html$span = _VirtualDom_node('span');
 var $author$project$Main$viewMenu = function (model) {
-	return A2(
-		$elm$html$Html$div,
-		_List_fromArray(
-			[
-				$elm$html$Html$Attributes$class('menu')
-			]),
-		_Utils_ap(
-			_Utils_eq(model.game, $author$project$Main$NOT_STARTED) ? _List_fromArray(
-				[
-					A2(
-					$elm$html$Html$button,
-					_List_fromArray(
-						[
-							$elm$html$Html$Events$onClick($author$project$Main$ButtonStartClicked),
-							$elm$html$Html$Attributes$class('button button-start')
-						]),
-					_List_fromArray(
-						[
-							$elm$html$Html$text('Start')
-						]))
-				]) : (_Utils_eq(model.game, $author$project$Main$GAME_OVER) ? _List_fromArray(
-				[
-					A2(
-					$elm$html$Html$p,
-					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('dead')
-						]),
-					_List_fromArray(
-						[
-							$elm$html$Html$text('Dead !')
-						])),
-					A2(
-					$elm$html$Html$p,
-					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('dead-score')
-						]),
-					_List_fromArray(
-						[
-							$elm$html$Html$text('You have '),
-							A2(
-							$elm$html$Html$strong,
-							_List_Nil,
-							_List_fromArray(
-								[
-									$elm$html$Html$text(
-									$elm$core$String$fromInt(model.score))
-								])),
-							$elm$html$Html$text(' point(s)')
-						])),
-					A2(
-					$elm$html$Html$button,
-					_List_fromArray(
-						[
-							$elm$html$Html$Events$onClick($author$project$Main$ButtonReStartClicked),
-							$elm$html$Html$Attributes$class('button button-restart')
-						]),
-					_List_fromArray(
-						[
-							$elm$html$Html$text('Re-start')
-						]))
-				]) : _List_fromArray(
-				[
-					A2($elm$html$Html$span, _List_Nil, _List_Nil)
-				])),
-			_List_fromArray(
-				[
-					A2(
-					$elm$html$Html$p,
-					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$class('score')
-						]),
-					_List_fromArray(
-						[
-							$elm$html$Html$text(
-							$elm$core$String$fromInt(model.score))
-						]))
-				])));
+	var _v0 = model.game;
+	switch (_v0.$) {
+		case 'NOT_STARTED':
+			return A2(
+				$elm$html$Html$div,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('menu')
+					]),
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$button,
+						_List_fromArray(
+							[
+								$elm$html$Html$Events$onClick($author$project$Main$ButtonStartClicked),
+								$elm$html$Html$Attributes$class('button button-start')
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Start')
+							]))
+					]));
+		case 'GAME_OVER':
+			return A2(
+				$elm$html$Html$div,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('menu')
+					]),
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$p,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('dead')
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Dead !')
+							])),
+						A2(
+						$elm$html$Html$p,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('dead-score')
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('You have '),
+								A2(
+								$elm$html$Html$strong,
+								_List_Nil,
+								_List_fromArray(
+									[
+										$elm$html$Html$text(
+										$elm$core$String$fromInt(model.score))
+									])),
+								$elm$html$Html$text(' point(s)')
+							])),
+						A2(
+						$elm$html$Html$button,
+						_List_fromArray(
+							[
+								$elm$html$Html$Events$onClick($author$project$Main$ButtonReStartClicked),
+								$elm$html$Html$Attributes$class('button button-restart')
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Re-start')
+							]))
+					]));
+		default:
+			return A2(
+				$elm$html$Html$div,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('menu')
+					]),
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$p,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('score')
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text(
+								$elm$core$String$fromInt(model.score))
+							]))
+					]));
+	}
 };
 var $elm$html$Html$tr = _VirtualDom_node('tr');
 var $author$project$Main$isAppleOn = F2(

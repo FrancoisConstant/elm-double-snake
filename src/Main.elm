@@ -358,33 +358,34 @@ view model =
 
 viewMenu : Model -> Html Msg
 viewMenu model =
-    div [ class "menu" ]
-        ((if model.game == NOT_STARTED then
-            [ button
-                [ onClick ButtonStartClicked, class "button button-start" ]
-                [ text "Start" ]
-            ]
-
-          else if model.game == GAME_OVER then
-            [ p [ class "dead" ] [ text "Dead !" ]
-            , p [ class "dead-score" ]
-                [ text "You have "
-                , strong [] [ text (model.score |> String.fromInt) ]
-                , text " point(s)"
+    case model.game of
+        NOT_STARTED ->
+            div [ class "menu" ]
+                [ button
+                    [ onClick ButtonStartClicked, class "button button-start" ]
+                    [ text "Start" ]
                 ]
-            , button
-                [ onClick ButtonReStartClicked, class "button button-restart" ]
-                [ text "Re-start" ]
-            ]
 
-          else
-            [ span [] [] ]
-         )
-            ++ [ p
+        GAME_OVER ->
+            div [ class "menu" ]
+                [ p [ class "dead" ] [ text "Dead !" ]
+                , p [ class "dead-score" ]
+                    [ text "You have "
+                    , strong [] [ text (model.score |> String.fromInt) ]
+                    , text " point(s)"
+                    ]
+                , button
+                    [ onClick ButtonReStartClicked, class "button button-restart" ]
+                    [ text "Re-start" ]
+                ]
+
+        _ ->
+            -- WIP, PAUSED
+            div [ class "menu" ]
+                [ p
                     [ class "score" ]
                     [ text (model.score |> String.fromInt) ]
-               ]
-        )
+                ]
 
 
 viewRows : Model -> List (Html Msg)
