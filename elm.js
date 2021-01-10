@@ -5352,45 +5352,48 @@ var $elm$core$Dict$fromList = function (assocs) {
 		$elm$core$Dict$empty,
 		assocs);
 };
+var $author$project$Main$getDefaultModel = function (game) {
+	return {
+		appleToReplaceKey: 1,
+		apples: $elm$core$Dict$fromList(
+			_List_fromArray(
+				[
+					_Utils_Tuple2(
+					1,
+					{x: 14, y: 18}),
+					_Utils_Tuple2(
+					2,
+					{x: 8, y: 6})
+				])),
+		elapsedTimeSinceLastUpdate: 0,
+		game: game,
+		otherSnake: {
+			directions: _List_fromArray(
+				[$author$project$Main$RIGHT]),
+			positions: _List_fromArray(
+				[
+					{x: 20, y: 20},
+					{x: 21, y: 20}
+				])
+		},
+		score: 0,
+		snake: {
+			directions: _List_fromArray(
+				[$author$project$Main$RIGHT]),
+			positions: _List_fromArray(
+				[
+					{x: 5, y: 5},
+					{x: 6, y: 5}
+				])
+		},
+		totalTime: 0
+	};
+};
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
 var $author$project$Main$init = function (_v0) {
 	return _Utils_Tuple2(
-		{
-			appleToReplaceKey: 1,
-			apples: $elm$core$Dict$fromList(
-				_List_fromArray(
-					[
-						_Utils_Tuple2(
-						1,
-						{x: 14, y: 18}),
-						_Utils_Tuple2(
-						2,
-						{x: 8, y: 6})
-					])),
-			elapsedTimeSinceLastUpdate: 0,
-			game: $author$project$Main$NOT_STARTED,
-			otherSnake: {
-				directions: _List_fromArray(
-					[$author$project$Main$RIGHT]),
-				positions: _List_fromArray(
-					[
-						{x: 20, y: 20},
-						{x: 21, y: 20}
-					])
-			},
-			score: 0,
-			snake: {
-				directions: _List_fromArray(
-					[$author$project$Main$RIGHT]),
-				positions: _List_fromArray(
-					[
-						{x: 5, y: 5},
-						{x: 6, y: 5}
-					])
-			},
-			totalTime: 0
-		},
+		$author$project$Main$getDefaultModel($author$project$Main$NOT_STARTED),
 		$elm$core$Platform$Cmd$none);
 };
 var $author$project$Main$Frame = function (a) {
@@ -5402,28 +5405,32 @@ var $author$project$Main$KeyPushed = function (a) {
 var $elm$core$Platform$Sub$batch = _Platform_batch;
 var $elm$json$Json$Decode$field = _Json_decodeField;
 var $elm$json$Json$Decode$string = _Json_decodeString;
+var $author$project$Main$DIRECTION = function (a) {
+	return {$: 'DIRECTION', a: a};
+};
 var $author$project$Main$DOWN = {$: 'DOWN'};
 var $author$project$Main$LEFT = {$: 'LEFT'};
+var $author$project$Main$SPACE = {$: 'SPACE'};
 var $author$project$Main$UP = {$: 'UP'};
-var $elm$core$Debug$log = _Debug_log;
-var $author$project$Main$toDirection = function (string) {
-	var _v0 = A2($elm$core$Debug$log, 'a', string);
+var $author$project$Main$stringToKey = function (string) {
 	switch (string) {
 		case 'ArrowLeft':
-			return $author$project$Main$LEFT;
+			return $author$project$Main$DIRECTION($author$project$Main$LEFT);
 		case 'ArrowRight':
-			return $author$project$Main$RIGHT;
+			return $author$project$Main$DIRECTION($author$project$Main$RIGHT);
 		case 'ArrowUp':
-			return $author$project$Main$UP;
+			return $author$project$Main$DIRECTION($author$project$Main$UP);
 		case 'ArrowDown':
-			return $author$project$Main$DOWN;
+			return $author$project$Main$DIRECTION($author$project$Main$DOWN);
+		case ' ':
+			return $author$project$Main$SPACE;
 		default:
-			return $author$project$Main$RIGHT;
+			return $author$project$Main$DIRECTION($author$project$Main$RIGHT);
 	}
 };
 var $author$project$Main$keyDecoder = A2(
 	$elm$json$Json$Decode$map,
-	$author$project$Main$toDirection,
+	$author$project$Main$stringToKey,
 	A2($elm$json$Json$Decode$field, 'key', $elm$json$Json$Decode$string));
 var $elm$browser$Browser$AnimationManager$Delta = function (a) {
 	return {$: 'Delta', a: a};
@@ -5844,68 +5851,6 @@ var $author$project$Main$subscriptions = function (_v0) {
 				$elm$browser$Browser$Events$onAnimationFrameDelta($author$project$Main$Frame)
 			]));
 };
-var $author$project$Main$WIP = {$: 'WIP'};
-var $author$project$Main$buttonStartClicked = function (model) {
-	return _Utils_Tuple2(
-		_Utils_update(
-			model,
-			{game: $author$project$Main$WIP}),
-		$elm$core$Platform$Cmd$none);
-};
-var $author$project$Main$asSnakeIn = F2(
-	function (model, snake) {
-		return _Utils_update(
-			model,
-			{snake: snake});
-	});
-var $elm$core$List$head = function (list) {
-	if (list.b) {
-		var x = list.a;
-		var xs = list.b;
-		return $elm$core$Maybe$Just(x);
-	} else {
-		return $elm$core$Maybe$Nothing;
-	}
-};
-var $elm$core$Basics$neq = _Utils_notEqual;
-var $elm$core$Basics$not = _Basics_not;
-var $elm$core$Maybe$withDefault = F2(
-	function (_default, maybe) {
-		if (maybe.$ === 'Just') {
-			var value = maybe.a;
-			return value;
-		} else {
-			return _default;
-		}
-	});
-var $author$project$Main$canUpdateDirection = F2(
-	function (newDirection, directions) {
-		var latestDirection = A2(
-			$elm$core$Maybe$withDefault,
-			$author$project$Main$LEFT,
-			$elm$core$List$head(
-				$elm$core$List$reverse(directions)));
-		return (!_Utils_eq(newDirection, latestDirection)) && ((!(_Utils_eq(newDirection, $author$project$Main$UP) && _Utils_eq(latestDirection, $author$project$Main$DOWN))) && ((!(_Utils_eq(newDirection, $author$project$Main$DOWN) && _Utils_eq(latestDirection, $author$project$Main$UP))) && ((!(_Utils_eq(newDirection, $author$project$Main$LEFT) && _Utils_eq(latestDirection, $author$project$Main$RIGHT))) && (!(_Utils_eq(newDirection, $author$project$Main$RIGHT) && _Utils_eq(latestDirection, $author$project$Main$LEFT))))));
-	});
-var $author$project$Main$keyPushed = F2(
-	function (newDirection, model) {
-		if (A2($author$project$Main$canUpdateDirection, newDirection, model.snake.directions)) {
-			var snake = model.snake;
-			var newSnake = _Utils_update(
-				snake,
-				{
-					directions: _Utils_ap(
-						snake.directions,
-						_List_fromArray(
-							[newDirection]))
-				});
-			return _Utils_Tuple2(
-				A2($author$project$Main$asSnakeIn, model, newSnake),
-				$elm$core$Platform$Cmd$none);
-		} else {
-			return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-		}
-	});
 var $author$project$Main$NewApplePosition = function (a) {
 	return {$: 'NewApplePosition', a: a};
 };
@@ -6541,6 +6486,19 @@ var $author$project$Main$updateApplePosition = F2(
 				model),
 			$elm$core$Platform$Cmd$none);
 	});
+var $author$project$Main$WIP = {$: 'WIP'};
+var $author$project$Main$updateButtonReStartClicked = function (model) {
+	return _Utils_Tuple2(
+		$author$project$Main$getDefaultModel($author$project$Main$WIP),
+		$elm$core$Platform$Cmd$none);
+};
+var $author$project$Main$updateButtonStartClicked = function (model) {
+	return _Utils_Tuple2(
+		_Utils_update(
+			model,
+			{game: $author$project$Main$WIP}),
+		$elm$core$Platform$Cmd$none);
+};
 var $elm$core$Dict$values = function (dict) {
 	return A3(
 		$elm$core$Dict$foldr,
@@ -6554,6 +6512,24 @@ var $elm$core$Dict$values = function (dict) {
 var $author$project$Main$getApplePositions = function (model) {
 	return $elm$core$Dict$values(model.apples);
 };
+var $elm$core$List$head = function (list) {
+	if (list.b) {
+		var x = list.a;
+		var xs = list.b;
+		return $elm$core$Maybe$Just(x);
+	} else {
+		return $elm$core$Maybe$Nothing;
+	}
+};
+var $elm$core$Maybe$withDefault = F2(
+	function (_default, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return value;
+		} else {
+			return _default;
+		}
+	});
 var $author$project$Main$getDirection = function (snake) {
 	return A2(
 		$elm$core$Maybe$withDefault,
@@ -6656,10 +6632,6 @@ var $author$project$Main$isSnakeCrashing = F2(
 			$elm$core$Maybe$withDefault,
 			{x: -1, y: -1},
 			$elm$core$List$head(snake.positions));
-		var _v0 = A2(
-			$elm$core$Debug$log,
-			'Pos',
-			_Utils_Tuple2(headPosition, snakeBodyPositions));
 		return ((_Utils_cmp(headPosition.x, $author$project$Settings$sizeX) > 0) || ((headPosition.x < 0) || ((_Utils_cmp(headPosition.y, $author$project$Settings$sizeY) > 0) || (headPosition.y < 0)))) || (A2($elm$core$List$member, headPosition, snakeBodyPositions) || A2(
 			$elm$core$List$any,
 			function (position) {
@@ -6667,6 +6639,7 @@ var $author$project$Main$isSnakeCrashing = F2(
 			},
 			snake.positions));
 	});
+var $elm$core$Basics$not = _Basics_not;
 var $author$project$Main$removePreviousDirection = function (directions) {
 	return ($elm$core$List$length(directions) > 1) ? A2($elm$core$List$drop, 1, directions) : directions;
 };
@@ -6834,6 +6807,71 @@ var $author$project$Main$updateFrame = F2(
 			return A2($author$project$Main$updateTimesOnly, timeDelta, model);
 		}
 	});
+var $author$project$Main$PAUSED = {$: 'PAUSED'};
+var $author$project$Main$asSnakeIn = F2(
+	function (model, snake) {
+		return _Utils_update(
+			model,
+			{snake: snake});
+	});
+var $elm$core$Basics$neq = _Utils_notEqual;
+var $author$project$Main$canUpdateDirection = F2(
+	function (newDirection, directions) {
+		var latestDirection = A2(
+			$elm$core$Maybe$withDefault,
+			$author$project$Main$LEFT,
+			$elm$core$List$head(
+				$elm$core$List$reverse(directions)));
+		return (!_Utils_eq(newDirection, latestDirection)) && ((!(_Utils_eq(newDirection, $author$project$Main$UP) && _Utils_eq(latestDirection, $author$project$Main$DOWN))) && ((!(_Utils_eq(newDirection, $author$project$Main$DOWN) && _Utils_eq(latestDirection, $author$project$Main$UP))) && ((!(_Utils_eq(newDirection, $author$project$Main$LEFT) && _Utils_eq(latestDirection, $author$project$Main$RIGHT))) && (!(_Utils_eq(newDirection, $author$project$Main$RIGHT) && _Utils_eq(latestDirection, $author$project$Main$LEFT))))));
+	});
+var $author$project$Main$updateKeyPushed = F2(
+	function (key, model) {
+		if (key.$ === 'DIRECTION') {
+			var newDirection = key.a;
+			if (A2($author$project$Main$canUpdateDirection, newDirection, model.snake.directions)) {
+				var snake = model.snake;
+				var newSnake = _Utils_update(
+					snake,
+					{
+						directions: _Utils_ap(
+							snake.directions,
+							_List_fromArray(
+								[newDirection]))
+					});
+				return _Utils_Tuple2(
+					A2($author$project$Main$asSnakeIn, model, newSnake),
+					$elm$core$Platform$Cmd$none);
+			} else {
+				return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+			}
+		} else {
+			var _v1 = model.game;
+			switch (_v1.$) {
+				case 'NOT_STARTED':
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{game: $author$project$Main$WIP}),
+						$elm$core$Platform$Cmd$none);
+				case 'PAUSED':
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{game: $author$project$Main$WIP}),
+						$elm$core$Platform$Cmd$none);
+				case 'WIP':
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{game: $author$project$Main$PAUSED}),
+						$elm$core$Platform$Cmd$none);
+				default:
+					return _Utils_Tuple2(
+						$author$project$Main$getDefaultModel($author$project$Main$WIP),
+						$elm$core$Platform$Cmd$none);
+			}
+		}
+	});
 var $author$project$Main$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
@@ -6841,10 +6879,12 @@ var $author$project$Main$update = F2(
 				var time = msg.a;
 				return A2($author$project$Main$updateFrame, time, model);
 			case 'ButtonStartClicked':
-				return $author$project$Main$buttonStartClicked(model);
+				return $author$project$Main$updateButtonStartClicked(model);
+			case 'ButtonReStartClicked':
+				return $author$project$Main$updateButtonReStartClicked(model);
 			case 'KeyPushed':
-				var direction = msg.a;
-				return A2($author$project$Main$keyPushed, direction, model);
+				var key = msg.a;
+				return A2($author$project$Main$updateKeyPushed, key, model);
 			default:
 				var position = msg.a;
 				return A2($author$project$Main$updateApplePosition, position, model);
@@ -6933,7 +6973,9 @@ var $author$project$Main$renderRows = function (model) {
 		},
 		y_list);
 };
+var $elm$html$Html$strong = _VirtualDom_node('strong');
 var $elm$html$Html$table = _VirtualDom_node('table');
+var $author$project$Main$ButtonReStartClicked = {$: 'ButtonReStartClicked'};
 var $author$project$Main$ButtonStartClicked = {$: 'ButtonStartClicked'};
 var $elm$html$Html$button = _VirtualDom_node('button');
 var $elm$virtual_dom$VirtualDom$Normal = function (a) {
@@ -6968,16 +7010,59 @@ var $author$project$Main$viewMenu = function (model) {
 					$elm$html$Html$button,
 					_List_fromArray(
 						[
-							$elm$html$Html$Events$onClick($author$project$Main$ButtonStartClicked)
+							$elm$html$Html$Events$onClick($author$project$Main$ButtonStartClicked),
+							$elm$html$Html$Attributes$class('button button-start')
 						]),
 					_List_fromArray(
 						[
 							$elm$html$Html$text('Start')
 						]))
+				]) : (_Utils_eq(model.game, $author$project$Main$GAME_OVER) ? _List_fromArray(
+				[
+					A2(
+					$elm$html$Html$p,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('dead')
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text('Dead !')
+						])),
+					A2(
+					$elm$html$Html$p,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('dead-score')
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text('You have '),
+							A2(
+							$elm$html$Html$strong,
+							_List_Nil,
+							_List_fromArray(
+								[
+									$elm$html$Html$text(
+									$elm$core$String$fromInt(model.score))
+								])),
+							$elm$html$Html$text(' point(s)')
+						])),
+					A2(
+					$elm$html$Html$button,
+					_List_fromArray(
+						[
+							$elm$html$Html$Events$onClick($author$project$Main$ButtonReStartClicked),
+							$elm$html$Html$Attributes$class('button button-restart')
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text('Re-start')
+						]))
 				]) : _List_fromArray(
 				[
 					A2($elm$html$Html$span, _List_Nil, _List_Nil)
-				]),
+				])),
 			_List_fromArray(
 				[
 					A2(
@@ -7027,6 +7112,19 @@ var $author$project$Main$view = function (model) {
 					]),
 				_List_fromArray(
 					[
+						A2(
+						$elm$html$Html$p,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$strong,
+								_List_Nil,
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Press space or click \"Start\" to start.')
+									]))
+							])),
 						A2(
 						$elm$html$Html$p,
 						_List_Nil,

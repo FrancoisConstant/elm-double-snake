@@ -3,8 +3,8 @@ module Main exposing (main)
 import Browser
 import Browser.Events
 import Dict exposing (Dict)
-import Html exposing (Html, br, button, div, p, span, table, td, text, tr)
-import Html.Attributes exposing (class, href, rel, style)
+import Html exposing (Html, button, div, p, span, strong, table, td, text, tr)
+import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
 import Json.Decode as Decode
 import List exposing (range)
@@ -21,7 +21,8 @@ import Settings exposing (bottomLimit, leftLimit, rightLimit, sizeX, sizeY, topL
 type Msg
     = Frame Float
     | ButtonStartClicked
-    | KeyPushed Direction
+    | ButtonReStartClicked
+    | KeyPushed Key
     | NewApplePosition Position
 
 
@@ -70,6 +71,7 @@ type alias Score =
 type Game
     = NOT_STARTED
     | WIP
+    | PAUSED
     | GAME_OVER
 
 
@@ -80,44 +82,52 @@ type Direction
     | LEFT
 
 
+type Key
+    = SPACE
+    | DIRECTION Direction
+
+
 init : flags -> ( Model, Cmd Msg )
 init _ =
-    ( { -- UI
-        game = NOT_STARTED
-      , score = 0
+    ( getDefaultModel NOT_STARTED, Cmd.none )
 
-      -- timer / animations
-      , totalTime = 0
-      , elapsedTimeSinceLastUpdate = 0
 
-      -- snakes and apples
-      , snake =
-            { positions =
-                [ { x = 5, y = 5 }
-                , { x = 6, y = 5 }
-                ]
+getDefaultModel : Game -> Model
+getDefaultModel game =
+    { -- UI
+      game = game
+    , score = 0
 
-            -- updated on each tick
-            , directions = [ RIGHT ]
-            }
-      , otherSnake =
-            { positions =
-                [ { x = 20, y = 20 }
-                , { x = 21, y = 20 }
-                ]
+    -- timer / animations
+    , totalTime = 0
+    , elapsedTimeSinceLastUpdate = 0
 
-            -- updated on each tick
-            , directions = [ RIGHT ]
-            }
-      , apples =
-            Dict.fromList
-                [ ( 1, { x = 14, y = 18 } )
-                , ( 2, { x = 8, y = 6 } )
-                ]
-      , appleToReplaceKey = 1
-      }
-    , Cmd.none
-    )
+    -- snakes and apples
+    , snake =
+        { positions =
+            [ { x = 5, y = 5 }
+            , { x = 6, y = 5 }
+            ]
+
+        -- updated on each tick
+        , directions = [ RIGHT ]
+        }
+    , otherSnake =
+        { positions =
+            [ { x = 20, y = 20 }
+            , { x = 21, y = 20 }
+            ]
+
+        -- updated on each tick
+        , directions = [ RIGHT ]
+        }
+    , apples =
+        Dict.fromList
+            [ ( 1, { x = 14, y = 18 } )
+            , ( 2, { x = 8, y = 6 } )
+            ]
+    , appleToReplaceKey = 1
+    }
 
 
 
@@ -146,10 +156,13 @@ update msg model =
             updateFrame time model
 
         ButtonStartClicked ->
-            buttonStartClicked model
+            updateButtonStartClicked model
 
-        KeyPushed direction ->
-            keyPushed direction model
+        ButtonReStartClicked ->
+            updateButtonReStartClicked model
+
+        KeyPushed key ->
+            updateKeyPushed key model
 
         NewApplePosition position ->
             updateApplePosition position model
@@ -280,27 +293,51 @@ updateApplePosition newPosition model =
         )
 
 
-buttonStartClicked : Model -> ( Model, Cmd Msg )
-buttonStartClicked model =
+updateButtonStartClicked : Model -> ( Model, Cmd Msg )
+updateButtonStartClicked model =
     ( { model | game = WIP }, Cmd.none )
 
 
-{-| Add the direction pushed to the snake-directions-buffer if possible
+updateButtonReStartClicked : Model -> ( Model, Cmd Msg )
+updateButtonReStartClicked model =
+    ( getDefaultModel WIP, Cmd.none )
+
+
+{-| On user input, either start the game; pause the game or handle the new
+direction: add the direction to the snake-directions-buffer if possible
+(snake cannot reverse direction)
 -}
-keyPushed : Direction -> Model -> ( Model, Cmd Msg )
-keyPushed newDirection model =
-    if canUpdateDirection newDirection model.snake.directions then
-        let
-            snake =
-                model.snake
+updateKeyPushed : Key -> Model -> ( Model, Cmd Msg )
+updateKeyPushed key model =
+    case key of
+        DIRECTION newDirection ->
+            if canUpdateDirection newDirection model.snake.directions then
+                let
+                    snake =
+                        model.snake
 
-            newSnake =
-                { snake | directions = snake.directions ++ [ newDirection ] }
-        in
-        ( newSnake |> asSnakeIn model, Cmd.none )
+                    newSnake =
+                        { snake | directions = snake.directions ++ [ newDirection ] }
+                in
+                ( newSnake |> asSnakeIn model, Cmd.none )
 
-    else
-        ( model, Cmd.none )
+            else
+                ( model, Cmd.none )
+
+        SPACE ->
+            case model.game of
+                NOT_STARTED ->
+                    ( { model | game = WIP }, Cmd.none )
+
+                PAUSED ->
+                    ( { model | game = WIP }, Cmd.none )
+
+                WIP ->
+                    ( { model | game = PAUSED }, Cmd.none )
+
+                GAME_OVER ->
+                    -- re-start
+                    ( getDefaultModel WIP, Cmd.none )
 
 
 
@@ -320,7 +357,12 @@ view model =
             ]
         , div
             [ class "info" ]
-            [ p [] [ text "Use arrows to move." ]
+            [ p []
+                [ strong
+                    []
+                    [ text "Press space or click \"Start\" to start." ]
+                ]
+            , p [] [ text "Use arrows to move." ]
             , p [] [ text "Avoid the walls. Avoid the black snake." ]
             , p [] [ text "Eat the apples." ]
             ]
@@ -332,8 +374,20 @@ viewMenu model =
     div [ class "menu" ]
         ((if model.game == NOT_STARTED then
             [ button
-                [ onClick ButtonStartClicked ]
+                [ onClick ButtonStartClicked, class "button button-start" ]
                 [ text "Start" ]
+            ]
+
+          else if model.game == GAME_OVER then
+            [ p [ class "dead" ] [ text "Dead !" ]
+            , p [ class "dead-score" ]
+                [ text "You have "
+                , strong [] [ text (model.score |> String.fromInt) ]
+                , text " point(s)"
+                ]
+            , button
+                [ onClick ButtonReStartClicked, class "button button-restart" ]
+                [ text "Re-start" ]
             ]
 
           else
@@ -541,9 +595,6 @@ isSnakeCrashing snake otherSnake =
 
         snakeBodyPositions =
             snake.positions |> List.drop 1
-
-        _ =
-            Debug.log "Pos" ( headPosition, snakeBodyPositions )
     in
     (-- check table sizes
      (headPosition.x > sizeX || headPosition.x < 0 || headPosition.y > sizeY || headPosition.y < 0)
@@ -677,32 +728,33 @@ getNewOtherSnakeDirection headPosition currentDirection applePositions =
                 DOWN
 
 
-keyDecoder : Decode.Decoder Direction
+keyDecoder : Decode.Decoder Key
 keyDecoder =
-    Decode.map toDirection (Decode.field "key" Decode.string)
+    Decode.map
+        stringToKey
+        (Decode.field "key" Decode.string)
 
 
-toDirection : String -> Direction
-toDirection string =
-    let
-        _ =
-            Debug.log "a" string
-    in
+stringToKey : String -> Key
+stringToKey string =
     case string of
         "ArrowLeft" ->
-            LEFT
+            DIRECTION LEFT
 
         "ArrowRight" ->
-            RIGHT
+            DIRECTION RIGHT
 
         "ArrowUp" ->
-            UP
+            DIRECTION UP
 
         "ArrowDown" ->
-            DOWN
+            DIRECTION DOWN
+
+        " " ->
+            SPACE
 
         _ ->
-            RIGHT
+            DIRECTION RIGHT
 
 
 {-| Making sure the player cannot reverse the direction.
