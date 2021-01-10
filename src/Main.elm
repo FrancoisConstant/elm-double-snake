@@ -8,8 +8,24 @@ import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
 import Json.Decode as Decode
 import List exposing (range)
-import Random
-import Settings exposing (bottomLimit, leftLimit, rightLimit, sizeX, sizeY, topLimit)
+import Positions exposing (..)
+import Settings exposing (sizeX, sizeY)
+
+
+
+--
+-- MAIN
+--
+
+
+main : Program () Model Msg
+main =
+    Browser.element
+        { init = init
+        , view = view
+        , update = update
+        , subscriptions = subscriptions
+        }
 
 
 
@@ -38,7 +54,7 @@ type alias Model =
     , snake : Snake
     , otherSnake : Snake
     , apples : Dict AppleKey Apple
-    , appleToReplaceKey : AppleKey
+    , appleToReplaceKey : AppleKey -- next apple replaced when generating a new one
     , totalTime : Float
     , elapsedTimeSinceLastUpdate : Float
     }
@@ -47,12 +63,6 @@ type alias Model =
 type alias Snake =
     { positions : List Position
     , directions : List Direction
-    }
-
-
-type alias Position =
-    { x : Int
-    , y : Int
     }
 
 
@@ -92,6 +102,8 @@ init _ =
     ( getDefaultModel NOT_STARTED, Cmd.none )
 
 
+{-| Model when starting OR re-starting the game
+-}
 getDefaultModel : Game -> Model
 getDefaultModel game =
     { -- UI
@@ -102,30 +114,19 @@ getDefaultModel game =
     , totalTime = 0
     , elapsedTimeSinceLastUpdate = 0
 
-    -- snakes and apples
+    -- snakes
     , snake =
-        { positions =
-            [ { x = 5, y = 5 }
-            , { x = 6, y = 5 }
-            ]
-
-        -- updated on each tick
+        { positions = [ Position 5 5, Position 6 5 ]
         , directions = [ RIGHT ]
         }
     , otherSnake =
-        { positions =
-            [ { x = 20, y = 20 }
-            , { x = 21, y = 20 }
-            ]
-
-        -- updated on each tick
+        { positions = [ Position 20 20, Position 21 20 ]
         , directions = [ RIGHT ]
         }
+
+    -- apples
     , apples =
-        Dict.fromList
-            [ ( 1, { x = 14, y = 18 } )
-            , ( 2, { x = 8, y = 6 } )
-            ]
+        Dict.fromList [ ( 1, Position 14 18 ), ( 2, Position 8 6 ) ]
     , appleToReplaceKey = 1
     }
 
@@ -133,6 +134,7 @@ getDefaultModel game =
 
 --
 -- SUBSCRIPTIONS
+-- (new frames & new user inputs)
 --
 
 
@@ -152,14 +154,14 @@ subscriptions _ =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Frame time ->
-            updateFrame time model
-
         ButtonStartClicked ->
-            updateButtonStartClicked model
+            ( { model | game = WIP }, Cmd.none )
 
         ButtonReStartClicked ->
-            updateButtonReStartClicked model
+            ( getDefaultModel WIP, Cmd.none )
+
+        Frame time ->
+            updateFrame time model
 
         KeyPushed key ->
             updateKeyPushed key model
@@ -238,7 +240,7 @@ doUpdateFrame timeDelta model =
         appleToReplaceKey =
             let
                 apple1 =
-                    Maybe.withDefault { x = -1, y = -1 } (model.apples |> Dict.get 1)
+                    Maybe.withDefault (Position -1 -1) (model.apples |> Dict.get 1)
             in
             if apple1 == newHeadPosition || apple1 == otherSnakeHead then
                 1
@@ -248,13 +250,14 @@ doUpdateFrame timeDelta model =
 
         cmd =
             if (doesSnakeEat || doesOtherSnakeEat) && not doesCrash then
-                Random.generate NewApplePosition getRandomPosition
+                generateRandomPosition NewApplePosition
 
             else
                 Cmd.none
     in
     if doesCrash then
-        -- lost - don't update the position (so we still see the head)
+        -- lost - don't update the position
+        -- (so we still see the head before it crashes)
         ( model
             |> setGameOver
             |> setScore score
@@ -263,7 +266,7 @@ doUpdateFrame timeDelta model =
         )
 
     else
-        -- keep playing, update Snakes' position
+        -- keep playing, update Snakes' positions
         ( model
             |> setAppleToReplaceKey appleToReplaceKey
             |> setSnake futureSnake
@@ -281,7 +284,7 @@ updateApplePosition newPosition model =
             List.member newPosition (model.snake.positions ++ model.otherSnake.positions)
     in
     if isOnAnySnake then
-        ( model, Random.generate NewApplePosition getRandomPosition )
+        ( model, generateRandomPosition NewApplePosition )
 
     else
         ( model
@@ -291,16 +294,6 @@ updateApplePosition newPosition model =
                 )
         , Cmd.none
         )
-
-
-updateButtonStartClicked : Model -> ( Model, Cmd Msg )
-updateButtonStartClicked model =
-    ( { model | game = WIP }, Cmd.none )
-
-
-updateButtonReStartClicked : Model -> ( Model, Cmd Msg )
-updateButtonReStartClicked model =
-    ( getDefaultModel WIP, Cmd.none )
 
 
 {-| On user input, either start the game; pause the game or handle the new
@@ -351,17 +344,11 @@ view model =
     div [ class "" ]
         [ div [ class "main" ]
             [ viewMenu model
-            , table
-                [ class "snake-table" ]
-                (renderRows model)
+            , table [ class "snake-table" ] (viewRows model)
             ]
         , div
             [ class "info" ]
-            [ p []
-                [ strong
-                    []
-                    [ text "Press space or click \"Start\" to start." ]
-                ]
+            [ p [] [ strong [] [ text "Press space or click \"Start\" to start." ] ]
             , p [] [ text "Use arrows to move." ]
             , p [] [ text "Avoid the walls. Avoid the black snake." ]
             , p [] [ text "Eat the apples." ]
@@ -400,30 +387,30 @@ viewMenu model =
         )
 
 
-renderRows : Model -> List (Html Msg)
-renderRows model =
+viewRows : Model -> List (Html Msg)
+viewRows model =
     let
         y_list =
             range 0 sizeY
     in
     y_list
         |> List.map
-            (\y -> tr [] (renderColumns y model))
+            (\y -> tr [] (viewColumns y model))
 
 
-renderColumns : Int -> Model -> List (Html Msg)
-renderColumns y model =
+viewColumns : Int -> Model -> List (Html Msg)
+viewColumns y model =
     let
         x_list =
             range 0 sizeX
     in
     x_list
         |> List.map
-            (\x -> renderCase { x = x, y = y } model)
+            (\x -> viewCell { x = x, y = y } model)
 
 
-renderCase : Position -> Model -> Html Msg
-renderCase position model =
+viewCell : Position -> Model -> Html Msg
+viewCell position model =
     let
         showSnake =
             isSnakeOn position model.snake
@@ -518,31 +505,14 @@ updateTimes deltaTime newFrame model =
 
 updateSnakePosition : Bool -> Snake -> Snake
 updateSnakePosition doesSnakeEat snake =
-    { snake
-        | positions = updatePositions snake.positions (getDirection snake) doesSnakeEat
-    }
-
-
-updatePositions : List Position -> Direction -> Bool -> List Position
-updatePositions positions direction doesSnakeEat =
     let
         newHeadPosition =
-            getNewHeadPosition positions direction
-    in
-    if doesSnakeEat then
-        positions
-            -- Add new head at the first position
-            |> List.append [ newHeadPosition ]
+            getNewHeadPosition snake.positions (getDirection snake)
 
-    else
-        positions
-            -- Move latest position to the new head position:
-            -- 1.Remove latest position
-            |> List.reverse
-            |> List.drop 1
-            |> List.reverse
-            -- 2.Add new head at the first position
-            |> List.append [ newHeadPosition ]
+        positions =
+            movePositions snake.positions newHeadPosition doesSnakeEat
+    in
+    { snake | positions = positions }
 
 
 getNewHeadPosition : List Position -> Direction -> Position
@@ -607,26 +577,6 @@ isSnakeCrashing snake otherSnake =
     )
 
 
-closeToRight : Position -> Bool
-closeToRight headPosition =
-    headPosition.x > rightLimit
-
-
-closeToLeft : Position -> Bool
-closeToLeft headPosition =
-    headPosition.x < leftLimit
-
-
-closeToBottom : Position -> Bool
-closeToBottom headPosition =
-    headPosition.y > bottomLimit
-
-
-closeToTop : Position -> Bool
-closeToTop headPosition =
-    headPosition.y < topLimit
-
-
 getNewOtherSnakeDirection : Position -> Direction -> List Position -> Direction
 getNewOtherSnakeDirection headPosition currentDirection applePositions =
     let
@@ -634,28 +584,28 @@ getNewOtherSnakeDirection headPosition currentDirection applePositions =
             applePositions |> List.head |> Maybe.withDefault { x = 1, y = 1 }
 
         right =
-            closeToRight headPosition
+            isCloseToRight headPosition
 
         left =
-            closeToLeft headPosition
+            isCloseToLeft headPosition
 
         top =
-            closeToTop headPosition
+            isCloseToTop headPosition
 
         bottom =
-            closeToBottom headPosition
+            isCloseToBottom headPosition
 
         appleOnTheRight =
-            applePosition.x > headPosition.x
+            isOnRight applePosition headPosition
 
         appleOnTheLeft =
-            applePosition.x < headPosition.x
+            isOnLeft applePosition headPosition
 
         appleAbove =
-            applePosition.y < headPosition.y
+            isAbove applePosition headPosition
 
         appleUnder =
-            applePosition.y > headPosition.y
+            isUnder applePosition headPosition
     in
     case currentDirection of
         -- logic to avoid walls OR get closer to the apple
@@ -815,34 +765,3 @@ setApples apples model =
 setAppleToReplaceKey : AppleKey -> Model -> Model
 setAppleToReplaceKey appleToReplaceKey model =
     { model | appleToReplaceKey = appleToReplaceKey }
-
-
-getRandomXPosition : Random.Generator Int
-getRandomXPosition =
-    Random.int 1 sizeX
-
-
-getRandomYPosition : Random.Generator Int
-getRandomYPosition =
-    Random.int 1 sizeY
-
-
-getRandomPosition : Random.Generator Position
-getRandomPosition =
-    Random.map2 Position getRandomXPosition getRandomYPosition
-
-
-
---
--- MAIN
---
-
-
-main : Program () Model Msg
-main =
-    Browser.element
-        { init = init
-        , view = view
-        , update = update
-        , subscriptions = subscriptions
-        }

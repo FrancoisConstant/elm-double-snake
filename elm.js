@@ -5228,6 +5228,10 @@ var $elm$core$Task$perform = F2(
 	});
 var $elm$browser$Browser$element = _Browser_element;
 var $author$project$Main$NOT_STARTED = {$: 'NOT_STARTED'};
+var $author$project$Positions$Position = F2(
+	function (x, y) {
+		return {x: x, y: y};
+	});
 var $author$project$Main$RIGHT = {$: 'RIGHT'};
 var $elm$core$Dict$RBEmpty_elm_builtin = {$: 'RBEmpty_elm_builtin'};
 var $elm$core$Dict$empty = $elm$core$Dict$RBEmpty_elm_builtin;
@@ -5360,10 +5364,10 @@ var $author$project$Main$getDefaultModel = function (game) {
 				[
 					_Utils_Tuple2(
 					1,
-					{x: 14, y: 18}),
+					A2($author$project$Positions$Position, 14, 18)),
 					_Utils_Tuple2(
 					2,
-					{x: 8, y: 6})
+					A2($author$project$Positions$Position, 8, 6))
 				])),
 		elapsedTimeSinceLastUpdate: 0,
 		game: game,
@@ -5372,8 +5376,8 @@ var $author$project$Main$getDefaultModel = function (game) {
 				[$author$project$Main$RIGHT]),
 			positions: _List_fromArray(
 				[
-					{x: 20, y: 20},
-					{x: 21, y: 20}
+					A2($author$project$Positions$Position, 20, 20),
+					A2($author$project$Positions$Position, 21, 20)
 				])
 		},
 		score: 0,
@@ -5382,8 +5386,8 @@ var $author$project$Main$getDefaultModel = function (game) {
 				[$author$project$Main$RIGHT]),
 			positions: _List_fromArray(
 				[
-					{x: 5, y: 5},
-					{x: 6, y: 5}
+					A2($author$project$Positions$Position, 5, 5),
+					A2($author$project$Positions$Position, 6, 5)
 				])
 		},
 		totalTime: 0
@@ -5851,6 +5855,7 @@ var $author$project$Main$subscriptions = function (_v0) {
 				$elm$browser$Browser$Events$onAnimationFrameDelta($author$project$Main$Frame)
 			]));
 };
+var $author$project$Main$WIP = {$: 'WIP'};
 var $author$project$Main$NewApplePosition = function (a) {
 	return {$: 'NewApplePosition', a: a};
 };
@@ -5957,10 +5962,6 @@ var $elm$random$Random$generate = F2(
 			$elm$random$Random$Generate(
 				A2($elm$random$Random$map, tagger, generator)));
 	});
-var $author$project$Main$Position = F2(
-	function (x, y) {
-		return {x: x, y: y};
-	});
 var $elm$core$Bitwise$and = _Bitwise_and;
 var $elm$core$Basics$negate = function (n) {
 	return -n;
@@ -6004,9 +6005,9 @@ var $elm$random$Random$int = F2(
 			});
 	});
 var $author$project$Settings$sizeX = 42;
-var $author$project$Main$getRandomXPosition = A2($elm$random$Random$int, 1, $author$project$Settings$sizeX);
+var $author$project$Positions$getRandomXPosition = A2($elm$random$Random$int, 1, $author$project$Settings$sizeX);
 var $author$project$Settings$sizeY = 24;
-var $author$project$Main$getRandomYPosition = A2($elm$random$Random$int, 1, $author$project$Settings$sizeY);
+var $author$project$Positions$getRandomYPosition = A2($elm$random$Random$int, 1, $author$project$Settings$sizeY);
 var $elm$random$Random$map2 = F3(
 	function (func, _v0, _v1) {
 		var genA = _v0.a;
@@ -6024,7 +6025,10 @@ var $elm$random$Random$map2 = F3(
 					seed2);
 			});
 	});
-var $author$project$Main$getRandomPosition = A3($elm$random$Random$map2, $author$project$Main$Position, $author$project$Main$getRandomXPosition, $author$project$Main$getRandomYPosition);
+var $author$project$Positions$getRandomPosition = A3($elm$random$Random$map2, $author$project$Positions$Position, $author$project$Positions$getRandomXPosition, $author$project$Positions$getRandomYPosition);
+var $author$project$Positions$generateRandomPosition = function (msg) {
+	return A2($elm$random$Random$generate, msg, $author$project$Positions$getRandomPosition);
+};
 var $elm$core$List$any = F2(
 	function (isOkay, list) {
 		any:
@@ -6473,7 +6477,7 @@ var $author$project$Main$updateApplePosition = F2(
 			_Utils_ap(model.snake.positions, model.otherSnake.positions));
 		return isOnAnySnake ? _Utils_Tuple2(
 			model,
-			A2($elm$random$Random$generate, $author$project$Main$NewApplePosition, $author$project$Main$getRandomPosition)) : _Utils_Tuple2(
+			$author$project$Positions$generateRandomPosition($author$project$Main$NewApplePosition)) : _Utils_Tuple2(
 			A2(
 				$author$project$Main$setApples,
 				A3(
@@ -6486,19 +6490,6 @@ var $author$project$Main$updateApplePosition = F2(
 				model),
 			$elm$core$Platform$Cmd$none);
 	});
-var $author$project$Main$WIP = {$: 'WIP'};
-var $author$project$Main$updateButtonReStartClicked = function (model) {
-	return _Utils_Tuple2(
-		$author$project$Main$getDefaultModel($author$project$Main$WIP),
-		$elm$core$Platform$Cmd$none);
-};
-var $author$project$Main$updateButtonStartClicked = function (model) {
-	return _Utils_Tuple2(
-		_Utils_update(
-			model,
-			{game: $author$project$Main$WIP}),
-		$elm$core$Platform$Cmd$none);
-};
 var $elm$core$Dict$values = function (dict) {
 	return A3(
 		$elm$core$Dict$foldr,
@@ -6563,36 +6554,52 @@ var $author$project$Main$getNewHeadPosition = F2(
 			}
 		}
 	});
+var $author$project$Positions$isAbove = F2(
+	function (pos1, pos2) {
+		return _Utils_cmp(pos1.y, pos2.y) < 0;
+	});
 var $author$project$Settings$bottomLimit = $author$project$Settings$sizeY - 1;
-var $author$project$Main$closeToBottom = function (headPosition) {
+var $author$project$Positions$isCloseToBottom = function (headPosition) {
 	return _Utils_cmp(headPosition.y, $author$project$Settings$bottomLimit) > 0;
 };
 var $author$project$Settings$leftLimit = 1;
-var $author$project$Main$closeToLeft = function (headPosition) {
+var $author$project$Positions$isCloseToLeft = function (headPosition) {
 	return _Utils_cmp(headPosition.x, $author$project$Settings$leftLimit) < 0;
 };
 var $author$project$Settings$rightLimit = $author$project$Settings$sizeX - 1;
-var $author$project$Main$closeToRight = function (headPosition) {
+var $author$project$Positions$isCloseToRight = function (headPosition) {
 	return _Utils_cmp(headPosition.x, $author$project$Settings$rightLimit) > 0;
 };
 var $author$project$Settings$topLimit = 1;
-var $author$project$Main$closeToTop = function (headPosition) {
+var $author$project$Positions$isCloseToTop = function (headPosition) {
 	return _Utils_cmp(headPosition.y, $author$project$Settings$topLimit) < 0;
 };
+var $author$project$Positions$isOnLeft = F2(
+	function (pos1, pos2) {
+		return _Utils_cmp(pos1.x, pos2.x) < 0;
+	});
+var $author$project$Positions$isOnRight = F2(
+	function (pos1, pos2) {
+		return _Utils_cmp(pos1.x, pos2.x) > 0;
+	});
+var $author$project$Positions$isUnder = F2(
+	function (pos1, pos2) {
+		return _Utils_cmp(pos1.y, pos2.y) > 0;
+	});
 var $author$project$Main$getNewOtherSnakeDirection = F3(
 	function (headPosition, currentDirection, applePositions) {
-		var top = $author$project$Main$closeToTop(headPosition);
-		var right = $author$project$Main$closeToRight(headPosition);
-		var left = $author$project$Main$closeToLeft(headPosition);
-		var bottom = $author$project$Main$closeToBottom(headPosition);
+		var top = $author$project$Positions$isCloseToTop(headPosition);
+		var right = $author$project$Positions$isCloseToRight(headPosition);
+		var left = $author$project$Positions$isCloseToLeft(headPosition);
+		var bottom = $author$project$Positions$isCloseToBottom(headPosition);
 		var applePosition = A2(
 			$elm$core$Maybe$withDefault,
 			{x: 1, y: 1},
 			$elm$core$List$head(applePositions));
-		var appleUnder = _Utils_cmp(applePosition.y, headPosition.y) > 0;
-		var appleOnTheRight = _Utils_cmp(applePosition.x, headPosition.x) > 0;
-		var appleOnTheLeft = _Utils_cmp(applePosition.x, headPosition.x) < 0;
-		var appleAbove = _Utils_cmp(applePosition.y, headPosition.y) < 0;
+		var appleUnder = A2($author$project$Positions$isUnder, applePosition, headPosition);
+		var appleOnTheRight = A2($author$project$Positions$isOnRight, applePosition, headPosition);
+		var appleOnTheLeft = A2($author$project$Positions$isOnLeft, applePosition, headPosition);
+		var appleAbove = A2($author$project$Positions$isAbove, applePosition, headPosition);
 		switch (currentDirection.$) {
 			case 'UP':
 				return top ? (left ? $author$project$Main$RIGHT : $author$project$Main$LEFT) : (appleAbove ? currentDirection : (appleOnTheRight ? $author$project$Main$RIGHT : $author$project$Main$LEFT));
@@ -6673,25 +6680,11 @@ var $author$project$Main$setSnake = F2(
 			model,
 			{snake: snake});
 	});
-var $elm$core$List$append = F2(
-	function (xs, ys) {
-		if (!ys.b) {
-			return xs;
-		} else {
-			return A3($elm$core$List$foldr, $elm$core$List$cons, ys, xs);
-		}
-	});
-var $author$project$Main$updatePositions = F3(
-	function (positions, direction, doesSnakeEat) {
-		var newHeadPosition = A2($author$project$Main$getNewHeadPosition, positions, direction);
-		return doesSnakeEat ? A2(
-			$elm$core$List$append,
-			_List_fromArray(
-				[newHeadPosition]),
-			positions) : A2(
-			$elm$core$List$append,
-			_List_fromArray(
-				[newHeadPosition]),
+var $author$project$Positions$movePositions = F3(
+	function (positions, newFirstPosition, addPosition) {
+		return addPosition ? A2($elm$core$List$cons, newFirstPosition, positions) : A2(
+			$elm$core$List$cons,
+			newFirstPosition,
 			$elm$core$List$reverse(
 				A2(
 					$elm$core$List$drop,
@@ -6700,15 +6693,14 @@ var $author$project$Main$updatePositions = F3(
 	});
 var $author$project$Main$updateSnakePosition = F2(
 	function (doesSnakeEat, snake) {
+		var newHeadPosition = A2(
+			$author$project$Main$getNewHeadPosition,
+			snake.positions,
+			$author$project$Main$getDirection(snake));
+		var positions = A3($author$project$Positions$movePositions, snake.positions, newHeadPosition, doesSnakeEat);
 		return _Utils_update(
 			snake,
-			{
-				positions: A3(
-					$author$project$Main$updatePositions,
-					snake.positions,
-					$author$project$Main$getDirection(snake),
-					doesSnakeEat)
-			});
+			{positions: positions});
 	});
 var $author$project$Main$updateTimes = F3(
 	function (deltaTime, newFrame, model) {
@@ -6757,11 +6749,11 @@ var $author$project$Main$doUpdateFrame = F2(
 			});
 		var doesCrash = A2($author$project$Main$isSnakeCrashing, futureSnake, model.otherSnake);
 		var score = (doesSnakeEat && (!doesCrash)) ? (model.score + 1) : model.score;
-		var cmd = ((doesSnakeEat || doesOtherSnakeEat) && (!doesCrash)) ? A2($elm$random$Random$generate, $author$project$Main$NewApplePosition, $author$project$Main$getRandomPosition) : $elm$core$Platform$Cmd$none;
+		var cmd = ((doesSnakeEat || doesOtherSnakeEat) && (!doesCrash)) ? $author$project$Positions$generateRandomPosition($author$project$Main$NewApplePosition) : $elm$core$Platform$Cmd$none;
 		var appleToReplaceKey = function () {
 			var apple1 = A2(
 				$elm$core$Maybe$withDefault,
-				{x: -1, y: -1},
+				A2($author$project$Positions$Position, -1, -1),
 				A2($elm$core$Dict$get, 1, model.apples));
 			return (_Utils_eq(apple1, newHeadPosition) || _Utils_eq(apple1, otherSnakeHead)) ? 1 : 2;
 		}();
@@ -6875,13 +6867,19 @@ var $author$project$Main$updateKeyPushed = F2(
 var $author$project$Main$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
+			case 'ButtonStartClicked':
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{game: $author$project$Main$WIP}),
+					$elm$core$Platform$Cmd$none);
+			case 'ButtonReStartClicked':
+				return _Utils_Tuple2(
+					$author$project$Main$getDefaultModel($author$project$Main$WIP),
+					$elm$core$Platform$Cmd$none);
 			case 'Frame':
 				var time = msg.a;
 				return A2($author$project$Main$updateFrame, time, model);
-			case 'ButtonStartClicked':
-				return $author$project$Main$updateButtonStartClicked(model);
-			case 'ButtonReStartClicked':
-				return $author$project$Main$updateButtonReStartClicked(model);
 			case 'KeyPushed':
 				var key = msg.a;
 				return A2($author$project$Main$updateKeyPushed, key, model);
@@ -6901,80 +6899,10 @@ var $elm$html$Html$Attributes$stringProperty = F2(
 var $elm$html$Html$Attributes$class = $elm$html$Html$Attributes$stringProperty('className');
 var $elm$html$Html$div = _VirtualDom_node('div');
 var $elm$html$Html$p = _VirtualDom_node('p');
-var $author$project$Main$isAppleOn = F2(
-	function (position, model) {
-		return A2(
-			$elm$core$List$member,
-			position,
-			$author$project$Main$getApplePositions(model));
-	});
-var $author$project$Main$isSnakeHead = F2(
-	function (position, snake) {
-		return _Utils_eq(
-			position,
-			A2(
-				$elm$core$Maybe$withDefault,
-				{x: -1, y: -1},
-				$elm$core$List$head(snake.positions)));
-	});
-var $author$project$Main$isSnakeOn = F2(
-	function (position, snake) {
-		return A2($elm$core$List$member, position, snake.positions);
-	});
-var $elm$html$Html$td = _VirtualDom_node('td');
-var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
-var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
-var $author$project$Main$renderCase = F2(
-	function (position, model) {
-		var under = _Utils_update(
-			position,
-			{y: position.y - 1});
-		var showSnakeHead = A2($author$project$Main$isSnakeHead, position, model.snake);
-		var showSnake = A2($author$project$Main$isSnakeOn, position, model.snake);
-		var showShadow = A2($author$project$Main$isSnakeOn, under, model.snake) || (A2($author$project$Main$isAppleOn, under, model) || A2($author$project$Main$isSnakeOn, under, model.otherSnake));
-		var showOtherSnakeHead = A2($author$project$Main$isSnakeHead, position, model.otherSnake);
-		var showOtherSnake = A2($author$project$Main$isSnakeOn, position, model.otherSnake);
-		var showApple = (!showSnake) && A2($author$project$Main$isAppleOn, position, model);
-		var color = showSnakeHead ? 'snake-head' : (showSnake ? 'snake-body' : (showApple ? 'apple' : (showOtherSnakeHead ? 'snake-2-head' : (showOtherSnake ? 'snake-2-body' : (showShadow ? 'shadow' : '')))));
-		return A2(
-			$elm$html$Html$td,
-			_List_fromArray(
-				[
-					$elm$html$Html$Attributes$class('w-6 h-6 ' + color)
-				]),
-			_List_fromArray(
-				[
-					$elm$html$Html$text(' ')
-				]));
-	});
-var $author$project$Main$renderColumns = F2(
-	function (y, model) {
-		var x_list = A2($elm$core$List$range, 0, $author$project$Settings$sizeX);
-		return A2(
-			$elm$core$List$map,
-			function (x) {
-				return A2(
-					$author$project$Main$renderCase,
-					{x: x, y: y},
-					model);
-			},
-			x_list);
-	});
-var $elm$html$Html$tr = _VirtualDom_node('tr');
-var $author$project$Main$renderRows = function (model) {
-	var y_list = A2($elm$core$List$range, 0, $author$project$Settings$sizeY);
-	return A2(
-		$elm$core$List$map,
-		function (y) {
-			return A2(
-				$elm$html$Html$tr,
-				_List_Nil,
-				A2($author$project$Main$renderColumns, y, model));
-		},
-		y_list);
-};
 var $elm$html$Html$strong = _VirtualDom_node('strong');
 var $elm$html$Html$table = _VirtualDom_node('table');
+var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
+var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
 var $author$project$Main$ButtonReStartClicked = {$: 'ButtonReStartClicked'};
 var $author$project$Main$ButtonStartClicked = {$: 'ButtonStartClicked'};
 var $elm$html$Html$button = _VirtualDom_node('button');
@@ -7078,6 +7006,76 @@ var $author$project$Main$viewMenu = function (model) {
 						]))
 				])));
 };
+var $elm$html$Html$tr = _VirtualDom_node('tr');
+var $author$project$Main$isAppleOn = F2(
+	function (position, model) {
+		return A2(
+			$elm$core$List$member,
+			position,
+			$author$project$Main$getApplePositions(model));
+	});
+var $author$project$Main$isSnakeHead = F2(
+	function (position, snake) {
+		return _Utils_eq(
+			position,
+			A2(
+				$elm$core$Maybe$withDefault,
+				{x: -1, y: -1},
+				$elm$core$List$head(snake.positions)));
+	});
+var $author$project$Main$isSnakeOn = F2(
+	function (position, snake) {
+		return A2($elm$core$List$member, position, snake.positions);
+	});
+var $elm$html$Html$td = _VirtualDom_node('td');
+var $author$project$Main$viewCell = F2(
+	function (position, model) {
+		var under = _Utils_update(
+			position,
+			{y: position.y - 1});
+		var showSnakeHead = A2($author$project$Main$isSnakeHead, position, model.snake);
+		var showSnake = A2($author$project$Main$isSnakeOn, position, model.snake);
+		var showShadow = A2($author$project$Main$isSnakeOn, under, model.snake) || (A2($author$project$Main$isAppleOn, under, model) || A2($author$project$Main$isSnakeOn, under, model.otherSnake));
+		var showOtherSnakeHead = A2($author$project$Main$isSnakeHead, position, model.otherSnake);
+		var showOtherSnake = A2($author$project$Main$isSnakeOn, position, model.otherSnake);
+		var showApple = (!showSnake) && A2($author$project$Main$isAppleOn, position, model);
+		var color = showSnakeHead ? 'snake-head' : (showSnake ? 'snake-body' : (showApple ? 'apple' : (showOtherSnakeHead ? 'snake-2-head' : (showOtherSnake ? 'snake-2-body' : (showShadow ? 'shadow' : '')))));
+		return A2(
+			$elm$html$Html$td,
+			_List_fromArray(
+				[
+					$elm$html$Html$Attributes$class('w-6 h-6 ' + color)
+				]),
+			_List_fromArray(
+				[
+					$elm$html$Html$text(' ')
+				]));
+	});
+var $author$project$Main$viewColumns = F2(
+	function (y, model) {
+		var x_list = A2($elm$core$List$range, 0, $author$project$Settings$sizeX);
+		return A2(
+			$elm$core$List$map,
+			function (x) {
+				return A2(
+					$author$project$Main$viewCell,
+					{x: x, y: y},
+					model);
+			},
+			x_list);
+	});
+var $author$project$Main$viewRows = function (model) {
+	var y_list = A2($elm$core$List$range, 0, $author$project$Settings$sizeY);
+	return A2(
+		$elm$core$List$map,
+		function (y) {
+			return A2(
+				$elm$html$Html$tr,
+				_List_Nil,
+				A2($author$project$Main$viewColumns, y, model));
+		},
+		y_list);
+};
 var $author$project$Main$view = function (model) {
 	return A2(
 		$elm$html$Html$div,
@@ -7102,7 +7100,7 @@ var $author$project$Main$view = function (model) {
 							[
 								$elm$html$Html$Attributes$class('snake-table')
 							]),
-						$author$project$Main$renderRows(model))
+						$author$project$Main$viewRows(model))
 					])),
 				A2(
 				$elm$html$Html$div,
