@@ -52,14 +52,7 @@ type alias Model =
     , score : Score
     , snake : Snake
     , otherSnake : Snake
-
-    -- apples
-    , apple1 : Apple
-    , apple2 : Apple
-    , replaceApple1 : Bool
-    , replaceApple2 : Bool
-
-    -- frame rate
+    , apples : List Apple
     , totalTime : Float
     , elapsedTimeSinceLastUpdate : Float
     }
@@ -72,7 +65,9 @@ type alias Snake =
 
 
 type alias Apple =
-    Position
+    { position : Position
+    , eaten : Bool -- once eaten, the apple will be replaced
+    }
 
 
 type alias AppleKey =
@@ -130,10 +125,11 @@ getDefaultModel game =
         }
 
     -- apples
-    , apple1 = Position 49 49 -- non-sense positions - replaced via the commands
-    , apple2 = Position 50 50
-    , replaceApple1 = True
-    , replaceApple2 = True
+    -- (non-sense positions - replaced via the commands)
+    , apples =
+        [ { position = Position 49 49, eaten = True }
+        , { position = Position 50 50, eaten = True }
+        ]
     }
 
 
@@ -255,17 +251,17 @@ doUpdateFrame timeDelta model =
 
     else
         let
-            replaceApple1 =
-                List.member model.apple1 [ newHeadPosition, otherSnakeHead ]
+            apples =
+                markEatenApples [ newHeadPosition, otherSnakeHead ] model.apples
 
-            replaceApple2 =
-                List.member model.apple2 [ newHeadPosition, otherSnakeHead ]
+            eatenApplesCount =
+                getEatenApplesCount apples
 
             cmd =
-                if replaceApple1 && replaceApple2 && not doesCrash then
+                if eatenApplesCount >= 2 && not doesCrash then
                     generateTwoNewApplesPositions
 
-                else if (replaceApple1 || replaceApple2) && not doesCrash then
+                else if eatenApplesCount == 1 && not doesCrash then
                     generateNewApplePosition
 
                 else
@@ -273,8 +269,7 @@ doUpdateFrame timeDelta model =
         in
         -- keep playing, update Snakes' positions
         ( model
-            |> setReplaceApple1 replaceApple1
-            |> setReplaceApple2 replaceApple2
+            |> setApples apples
             |> setSnake futureSnake
             |> setOtherSnake otherSnake3
             |> setScore score
@@ -283,6 +278,9 @@ doUpdateFrame timeDelta model =
         )
 
 
+{-| Use the randomly generated position to replace one of the apples
+Generate a new position and ignore the current one if there is a Snake there already
+-}
 updateApplePosition : Position -> Model -> ( Model, Cmd Msg )
 updateApplePosition newPosition model =
     let
@@ -294,15 +292,30 @@ updateApplePosition newPosition model =
 
     else
         let
+            ( newApples, anAppleChanged ) =
+                List.foldl
+                    (\apple ( accApples, accOtherAppleChanged ) ->
+                        let
+                            changeApple =
+                                apple.eaten && not accOtherAppleChanged
+
+                            newApple =
+                                if changeApple then
+                                    { apple | position = newPosition, eaten = False }
+
+                                else
+                                    apple
+
+                            apples =
+                                newApple :: accApples
+                        in
+                        ( apples, changeApple )
+                    )
+                    ( [], False )
+                    model.apples
+
             newModel =
-                if model.replaceApple1 then
-                    model |> setApple1 newPosition |> setReplaceApple1 False
-
-                else if model.replaceApple2 then
-                    model |> setApple2 newPosition |> setReplaceApple2 False
-
-                else
-                    model
+                { model | apples = newApples }
         in
         ( newModel, Cmd.none )
 
@@ -749,27 +762,32 @@ setScore score model =
 
 getApplePositions : Model -> List Position
 getApplePositions model =
-    [ model.apple1, model.apple2 ]
+    List.map (\apple -> apple.position) model.apples
 
 
-setApple1 : Apple -> Model -> Model
-setApple1 apple model =
-    { model | apple1 = apple }
+setApples : List Apple -> Model -> Model
+setApples apples model =
+    { model | apples = apples }
 
 
-setApple2 : Apple -> Model -> Model
-setApple2 apple model =
-    { model | apple2 = apple }
+getEatenApplesCount : List Apple -> Int
+getEatenApplesCount apples =
+    List.length
+        (List.filter (\apple -> apple.eaten) apples)
 
 
-setReplaceApple1 : Bool -> Model -> Model
-setReplaceApple1 replace model =
-    { model | replaceApple1 = replace }
+markEatenApples : List Position -> List Apple -> List Apple
+markEatenApples headPositions apples =
+    List.map
+        (\apple ->
+            if List.member apple.position headPositions then
+                -- only replace if true
+                { apple | eaten = True }
 
-
-setReplaceApple2 : Bool -> Model -> Model
-setReplaceApple2 replace model =
-    { model | replaceApple2 = replace }
+            else
+                apple
+        )
+        apples
 
 
 generateNewApplePosition : Cmd Msg
