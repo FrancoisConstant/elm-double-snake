@@ -79,27 +79,27 @@ type alias Score =
 
 
 type Game
-    = NOT_STARTED
-    | WIP
-    | PAUSED
-    | GAME_OVER
+    = NotStarted
+    | Playing
+    | Paused
+    | GameOver
 
 
 type Direction
-    = UP
-    | RIGHT
-    | DOWN
-    | LEFT
+    = Up
+    | Right
+    | Down
+    | Left
 
 
 type Key
-    = SPACE
-    | DIRECTION Direction
+    = Space
+    | Arrow Direction
 
 
 init : flags -> ( Model, Cmd Msg )
 init _ =
-    ( getDefaultModel NOT_STARTED, generateTwoNewApplesPositions )
+    ( getDefaultModel NotStarted, generateTwoNewApplesPositions )
 
 
 {-| Model when starting OR re-starting the game
@@ -117,11 +117,11 @@ getDefaultModel game =
     -- snakes
     , snake =
         { positions = [ Position 5 5, Position 6 5 ]
-        , directions = [ RIGHT ]
+        , directions = [ Right ]
         }
     , otherSnake =
         { positions = [ Position 20 20, Position 21 20 ]
-        , directions = [ RIGHT ]
+        , directions = [ Right ]
         }
 
     -- apples
@@ -157,10 +157,10 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ButtonStartClicked ->
-            ( { model | game = WIP }, Cmd.none )
+            ( { model | game = Playing }, Cmd.none )
 
         ButtonReStartClicked ->
-            ( getDefaultModel WIP, generateTwoNewApplesPositions )
+            ( getDefaultModel Playing, generateTwoNewApplesPositions )
 
         Frame time ->
             updateFrame time model
@@ -174,7 +174,7 @@ update msg model =
 
 updateFrame : Float -> Model -> ( Model, Cmd Msg )
 updateFrame timeDelta model =
-    if model.game == WIP then
+    if model.game == Playing then
         let
             elapsedTimeSinceLastUpdate =
                 model.elapsedTimeSinceLastUpdate + timeDelta
@@ -327,7 +327,7 @@ direction: add the direction to the snake-directions-buffer if possible
 updateKeyPushed : Key -> Model -> ( Model, Cmd Msg )
 updateKeyPushed key model =
     case key of
-        DIRECTION newDirection ->
+        Arrow newDirection ->
             if canUpdateDirection newDirection model.snake.directions then
                 let
                     snake =
@@ -341,20 +341,20 @@ updateKeyPushed key model =
             else
                 ( model, Cmd.none )
 
-        SPACE ->
+        Space ->
             case model.game of
-                NOT_STARTED ->
-                    ( { model | game = WIP }, Cmd.none )
+                NotStarted ->
+                    ( { model | game = Playing }, Cmd.none )
 
-                PAUSED ->
-                    ( { model | game = WIP }, Cmd.none )
+                Paused ->
+                    ( { model | game = Playing }, Cmd.none )
 
-                WIP ->
-                    ( { model | game = PAUSED }, Cmd.none )
+                Playing ->
+                    ( { model | game = Paused }, Cmd.none )
 
-                GAME_OVER ->
+                GameOver ->
                     -- re-start
-                    ( getDefaultModel WIP, generateTwoNewApplesPositions )
+                    ( getDefaultModel Playing, generateTwoNewApplesPositions )
 
 
 
@@ -383,14 +383,14 @@ view model =
 viewMenu : Model -> Html Msg
 viewMenu model =
     case model.game of
-        NOT_STARTED ->
+        NotStarted ->
             div [ class "menu" ]
                 [ button
                     [ onClick ButtonStartClicked, class "button button-start" ]
                     [ text "Start" ]
                 ]
 
-        GAME_OVER ->
+        GameOver ->
             div [ class "menu" ]
                 [ p [ class "dead" ] [ text "Dead !" ]
                 , p [ class "dead-score" ]
@@ -404,7 +404,7 @@ viewMenu model =
                 ]
 
         _ ->
-            -- WIP, PAUSED
+            -- Playing, Paused
             div [ class "menu" ]
                 [ p
                     [ class "score" ]
@@ -536,16 +536,16 @@ getNewHeadPosition positions direction =
         Just position ->
             -- 0, 0 in top-left corner
             case direction of
-                UP ->
+                Up ->
                     { position | y = position.y - 1 }
 
-                RIGHT ->
+                Right ->
                     { position | x = position.x + 1 }
 
-                DOWN ->
+                Down ->
                     { position | y = position.y + 1 }
 
-                LEFT ->
+                Left ->
                     { position | x = position.x - 1 }
 
 
@@ -617,73 +617,73 @@ getNewOtherSnakeDirection headPosition currentDirection applePositions =
     in
     case currentDirection of
         -- logic to avoid walls OR to get closer to the apple
-        UP ->
+        Up ->
             if top then
                 if left then
-                    RIGHT
+                    Right
 
                 else
-                    LEFT
+                    Left
 
             else if appleAbove then
                 currentDirection
 
             else if appleOnTheRight then
-                RIGHT
+                Right
 
             else
-                LEFT
+                Left
 
-        RIGHT ->
+        Right ->
             if right then
                 if top then
-                    DOWN
+                    Down
 
                 else
-                    UP
+                    Up
 
             else if appleOnTheRight then
                 currentDirection
 
             else if appleAbove then
-                UP
+                Up
 
             else
-                DOWN
+                Down
 
-        DOWN ->
+        Down ->
             if bottom then
                 if right then
-                    LEFT
+                    Left
 
                 else
-                    RIGHT
+                    Right
 
             else if appleUnder then
                 currentDirection
 
             else if appleOnTheRight then
-                RIGHT
+                Right
 
             else
-                LEFT
+                Left
 
-        LEFT ->
+        Left ->
             if left then
                 if bottom then
-                    UP
+                    Up
 
                 else
-                    DOWN
+                    Down
 
             else if appleOnTheLeft then
                 currentDirection
 
             else if appleAbove then
-                UP
+                Up
 
             else
-                DOWN
+                Down
 
 
 keyDecoder : Decode.Decoder Key
@@ -697,22 +697,22 @@ stringToKey : String -> Key
 stringToKey string =
     case string of
         "ArrowLeft" ->
-            DIRECTION LEFT
+            Arrow Left
 
         "ArrowRight" ->
-            DIRECTION RIGHT
+            Arrow Right
 
         "ArrowUp" ->
-            DIRECTION UP
+            Arrow Up
 
         "ArrowDown" ->
-            DIRECTION DOWN
+            Arrow Down
 
         " " ->
-            SPACE
+            Space
 
         _ ->
-            DIRECTION RIGHT
+            Arrow Right
 
 
 {-| Making sure the player cannot reverse the direction.
@@ -721,13 +721,13 @@ canUpdateDirection : Direction -> List Direction -> Bool
 canUpdateDirection newDirection directions =
     let
         latestDirection =
-            List.reverse directions |> List.head |> Maybe.withDefault LEFT
+            List.reverse directions |> List.head |> Maybe.withDefault Left
     in
     (newDirection /= latestDirection)
-        && not (newDirection == UP && latestDirection == DOWN)
-        && not (newDirection == DOWN && latestDirection == UP)
-        && not (newDirection == LEFT && latestDirection == RIGHT)
-        && not (newDirection == RIGHT && latestDirection == LEFT)
+        && not (newDirection == Up && latestDirection == Down)
+        && not (newDirection == Down && latestDirection == Up)
+        && not (newDirection == Left && latestDirection == Right)
+        && not (newDirection == Right && latestDirection == Left)
 
 
 {-| First direction is the oldest one.
@@ -747,12 +747,12 @@ getDirection : Snake -> Direction
 getDirection snake =
     snake.directions
         |> List.head
-        |> Maybe.withDefault RIGHT
+        |> Maybe.withDefault Right
 
 
 setGameOver : Model -> Model
 setGameOver model =
-    { model | game = GAME_OVER }
+    { model | game = GameOver }
 
 
 setScore : Score -> Model -> Model
