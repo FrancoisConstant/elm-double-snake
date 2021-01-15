@@ -5227,7 +5227,7 @@ var $elm$core$Task$perform = F2(
 				A2($elm$core$Task$map, toMessage, task)));
 	});
 var $elm$browser$Browser$element = _Browser_element;
-var $author$project$Main$NOT_STARTED = {$: 'NOT_STARTED'};
+var $author$project$Main$NotStarted = {$: 'NotStarted'};
 var $author$project$Main$NewApplePosition = function (a) {
 	return {$: 'NewApplePosition', a: a};
 };
@@ -5416,8 +5416,8 @@ var $author$project$Main$generateTwoNewApplesPositions = $elm$core$Platform$Cmd$
 			$author$project$Positions$generateRandomPosition($author$project$Main$NewApplePosition),
 			$author$project$Positions$generateRandomPosition($author$project$Main$NewApplePosition)
 		]));
-var $author$project$Main$RIGHT = {$: 'RIGHT'};
-var $author$project$Main$getDefaultModel = function (game) {
+var $author$project$Main$Right = {$: 'Right'};
+var $author$project$Main$getModelForGameStart = function (game) {
 	return {
 		apples: _List_fromArray(
 			[
@@ -5434,7 +5434,7 @@ var $author$project$Main$getDefaultModel = function (game) {
 		game: game,
 		otherSnake: {
 			directions: _List_fromArray(
-				[$author$project$Main$RIGHT]),
+				[$author$project$Main$Right]),
 			positions: _List_fromArray(
 				[
 					A2($author$project$Positions$Position, 20, 20),
@@ -5444,7 +5444,7 @@ var $author$project$Main$getDefaultModel = function (game) {
 		score: 0,
 		snake: {
 			directions: _List_fromArray(
-				[$author$project$Main$RIGHT]),
+				[$author$project$Main$Right]),
 			positions: _List_fromArray(
 				[
 					A2($author$project$Positions$Position, 5, 5),
@@ -5456,7 +5456,7 @@ var $author$project$Main$getDefaultModel = function (game) {
 };
 var $author$project$Main$init = function (_v0) {
 	return _Utils_Tuple2(
-		$author$project$Main$getDefaultModel($author$project$Main$NOT_STARTED),
+		$author$project$Main$getModelForGameStart($author$project$Main$NotStarted),
 		$author$project$Main$generateTwoNewApplesPositions);
 };
 var $author$project$Main$Frame = function (a) {
@@ -5468,27 +5468,27 @@ var $author$project$Main$KeyPushed = function (a) {
 var $elm$core$Platform$Sub$batch = _Platform_batch;
 var $elm$json$Json$Decode$field = _Json_decodeField;
 var $elm$json$Json$Decode$string = _Json_decodeString;
-var $author$project$Main$DIRECTION = function (a) {
-	return {$: 'DIRECTION', a: a};
+var $author$project$Main$Arrow = function (a) {
+	return {$: 'Arrow', a: a};
 };
-var $author$project$Main$DOWN = {$: 'DOWN'};
-var $author$project$Main$LEFT = {$: 'LEFT'};
-var $author$project$Main$SPACE = {$: 'SPACE'};
-var $author$project$Main$UP = {$: 'UP'};
+var $author$project$Main$Down = {$: 'Down'};
+var $author$project$Main$Left = {$: 'Left'};
+var $author$project$Main$Space = {$: 'Space'};
+var $author$project$Main$Up = {$: 'Up'};
 var $author$project$Main$stringToKey = function (string) {
 	switch (string) {
 		case 'ArrowLeft':
-			return $author$project$Main$DIRECTION($author$project$Main$LEFT);
+			return $author$project$Main$Arrow($author$project$Main$Left);
 		case 'ArrowRight':
-			return $author$project$Main$DIRECTION($author$project$Main$RIGHT);
+			return $author$project$Main$Arrow($author$project$Main$Right);
 		case 'ArrowUp':
-			return $author$project$Main$DIRECTION($author$project$Main$UP);
+			return $author$project$Main$Arrow($author$project$Main$Up);
 		case 'ArrowDown':
-			return $author$project$Main$DIRECTION($author$project$Main$DOWN);
+			return $author$project$Main$Arrow($author$project$Main$Down);
 		case ' ':
-			return $author$project$Main$SPACE;
+			return $author$project$Main$Space;
 		default:
-			return $author$project$Main$DIRECTION($author$project$Main$RIGHT);
+			return $author$project$Main$Arrow($author$project$Main$Right);
 	}
 };
 var $author$project$Main$keyDecoder = A2(
@@ -6033,7 +6033,7 @@ var $author$project$Main$subscriptions = function (_v0) {
 				$elm$browser$Browser$Events$onAnimationFrameDelta($author$project$Main$Frame)
 			]));
 };
-var $author$project$Main$WIP = {$: 'WIP'};
+var $author$project$Main$Playing = {$: 'Playing'};
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
 var $author$project$Main$generateNewApplePosition = $author$project$Positions$generateRandomPosition($author$project$Main$NewApplePosition);
 var $elm$core$List$any = F2(
@@ -6129,7 +6129,7 @@ var $elm$core$Maybe$withDefault = F2(
 var $author$project$Main$getDirection = function (snake) {
 	return A2(
 		$elm$core$Maybe$withDefault,
-		$author$project$Main$RIGHT,
+		$author$project$Main$Right,
 		$elm$core$List$head(snake.directions));
 };
 var $elm$core$List$filter = F2(
@@ -6160,15 +6160,15 @@ var $author$project$Main$getNewHeadPosition = F2(
 		} else {
 			var position = maybeSnakeHead.a;
 			switch (direction.$) {
-				case 'UP':
+				case 'Up':
 					return _Utils_update(
 						position,
 						{y: position.y - 1});
-				case 'RIGHT':
+				case 'Right':
 					return _Utils_update(
 						position,
 						{x: position.x + 1});
-				case 'DOWN':
+				case 'Down':
 					return _Utils_update(
 						position,
 						{y: position.y + 1});
@@ -6226,14 +6226,14 @@ var $author$project$Main$getNewOtherSnakeDirection = F3(
 		var appleOnTheLeft = A2($author$project$Positions$isOnLeft, applePosition, headPosition);
 		var appleAbove = A2($author$project$Positions$isAbove, applePosition, headPosition);
 		switch (currentDirection.$) {
-			case 'UP':
-				return top ? (left ? $author$project$Main$RIGHT : $author$project$Main$LEFT) : (appleAbove ? currentDirection : (appleOnTheRight ? $author$project$Main$RIGHT : $author$project$Main$LEFT));
-			case 'RIGHT':
-				return right ? (top ? $author$project$Main$DOWN : $author$project$Main$UP) : (appleOnTheRight ? currentDirection : (appleAbove ? $author$project$Main$UP : $author$project$Main$DOWN));
-			case 'DOWN':
-				return bottom ? (right ? $author$project$Main$LEFT : $author$project$Main$RIGHT) : (appleUnder ? currentDirection : (appleOnTheRight ? $author$project$Main$RIGHT : $author$project$Main$LEFT));
+			case 'Up':
+				return top ? (left ? $author$project$Main$Right : $author$project$Main$Left) : (appleAbove ? currentDirection : (appleOnTheRight ? $author$project$Main$Right : $author$project$Main$Left));
+			case 'Right':
+				return right ? (top ? $author$project$Main$Down : $author$project$Main$Up) : (appleOnTheRight ? currentDirection : (appleAbove ? $author$project$Main$Up : $author$project$Main$Down));
+			case 'Down':
+				return bottom ? (right ? $author$project$Main$Left : $author$project$Main$Right) : (appleUnder ? currentDirection : (appleOnTheRight ? $author$project$Main$Right : $author$project$Main$Left));
 			default:
-				return left ? (bottom ? $author$project$Main$UP : $author$project$Main$DOWN) : (appleOnTheLeft ? currentDirection : (appleAbove ? $author$project$Main$UP : $author$project$Main$DOWN));
+				return left ? (bottom ? $author$project$Main$Up : $author$project$Main$Down) : (appleOnTheLeft ? currentDirection : (appleAbove ? $author$project$Main$Up : $author$project$Main$Down));
 		}
 	});
 var $elm$core$List$drop = F2(
@@ -6291,11 +6291,11 @@ var $author$project$Main$setApples = F2(
 			model,
 			{apples: apples});
 	});
-var $author$project$Main$GAME_OVER = {$: 'GAME_OVER'};
+var $author$project$Main$GameOver = {$: 'GameOver'};
 var $author$project$Main$setGameOver = function (model) {
 	return _Utils_update(
 		model,
-		{game: $author$project$Main$GAME_OVER});
+		{game: $author$project$Main$GameOver});
 };
 var $author$project$Main$setOtherSnake = F2(
 	function (otherSnake, model) {
@@ -6429,33 +6429,46 @@ var $author$project$Main$updateTimesOnly = F2(
 	});
 var $author$project$Main$updateFrame = F2(
 	function (timeDelta, model) {
-		if (_Utils_eq(model.game, $author$project$Main$WIP)) {
+		if (_Utils_eq(model.game, $author$project$Main$Playing)) {
 			var elapsedTimeSinceLastUpdate = model.elapsedTimeSinceLastUpdate + timeDelta;
 			return (elapsedTimeSinceLastUpdate >= 100) ? A2($author$project$Main$doUpdateFrame, timeDelta, model) : A2($author$project$Main$updateTimesOnly, timeDelta, model);
 		} else {
 			return A2($author$project$Main$updateTimesOnly, timeDelta, model);
 		}
 	});
-var $author$project$Main$PAUSED = {$: 'PAUSED'};
+var $author$project$Main$Paused = {$: 'Paused'};
 var $author$project$Main$asSnakeIn = F2(
 	function (model, snake) {
 		return _Utils_update(
 			model,
 			{snake: snake});
 	});
+var $author$project$Main$isOppositeDirection = F2(
+	function (direction1, direction2) {
+		return A2(
+			$elm$core$List$member,
+			_Utils_Tuple2(direction1, direction2),
+			_List_fromArray(
+				[
+					_Utils_Tuple2($author$project$Main$Up, $author$project$Main$Down),
+					_Utils_Tuple2($author$project$Main$Down, $author$project$Main$Up),
+					_Utils_Tuple2($author$project$Main$Left, $author$project$Main$Right),
+					_Utils_Tuple2($author$project$Main$Right, $author$project$Main$Left)
+				]));
+	});
 var $elm$core$Basics$neq = _Utils_notEqual;
 var $author$project$Main$canUpdateDirection = F2(
 	function (newDirection, directions) {
 		var latestDirection = A2(
 			$elm$core$Maybe$withDefault,
-			$author$project$Main$LEFT,
+			$author$project$Main$Left,
 			$elm$core$List$head(
 				$elm$core$List$reverse(directions)));
-		return (!_Utils_eq(newDirection, latestDirection)) && ((!(_Utils_eq(newDirection, $author$project$Main$UP) && _Utils_eq(latestDirection, $author$project$Main$DOWN))) && ((!(_Utils_eq(newDirection, $author$project$Main$DOWN) && _Utils_eq(latestDirection, $author$project$Main$UP))) && ((!(_Utils_eq(newDirection, $author$project$Main$LEFT) && _Utils_eq(latestDirection, $author$project$Main$RIGHT))) && (!(_Utils_eq(newDirection, $author$project$Main$RIGHT) && _Utils_eq(latestDirection, $author$project$Main$LEFT))))));
+		return (!_Utils_eq(newDirection, latestDirection)) && (!A2($author$project$Main$isOppositeDirection, newDirection, latestDirection));
 	});
 var $author$project$Main$updateKeyPushed = F2(
 	function (key, model) {
-		if (key.$ === 'DIRECTION') {
+		if (key.$ === 'Arrow') {
 			var newDirection = key.a;
 			if (A2($author$project$Main$canUpdateDirection, newDirection, model.snake.directions)) {
 				var snake = model.snake;
@@ -6476,27 +6489,27 @@ var $author$project$Main$updateKeyPushed = F2(
 		} else {
 			var _v1 = model.game;
 			switch (_v1.$) {
-				case 'NOT_STARTED':
+				case 'NotStarted':
 					return _Utils_Tuple2(
 						_Utils_update(
 							model,
-							{game: $author$project$Main$WIP}),
+							{game: $author$project$Main$Playing}),
 						$elm$core$Platform$Cmd$none);
-				case 'PAUSED':
+				case 'Paused':
 					return _Utils_Tuple2(
 						_Utils_update(
 							model,
-							{game: $author$project$Main$WIP}),
+							{game: $author$project$Main$Playing}),
 						$elm$core$Platform$Cmd$none);
-				case 'WIP':
+				case 'Playing':
 					return _Utils_Tuple2(
 						_Utils_update(
 							model,
-							{game: $author$project$Main$PAUSED}),
+							{game: $author$project$Main$Paused}),
 						$elm$core$Platform$Cmd$none);
 				default:
 					return _Utils_Tuple2(
-						$author$project$Main$getDefaultModel($author$project$Main$WIP),
+						$author$project$Main$getModelForGameStart($author$project$Main$Playing),
 						$author$project$Main$generateTwoNewApplesPositions);
 			}
 		}
@@ -6508,11 +6521,11 @@ var $author$project$Main$update = F2(
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{game: $author$project$Main$WIP}),
+						{game: $author$project$Main$Playing}),
 					$elm$core$Platform$Cmd$none);
 			case 'ButtonReStartClicked':
 				return _Utils_Tuple2(
-					$author$project$Main$getDefaultModel($author$project$Main$WIP),
+					$author$project$Main$getModelForGameStart($author$project$Main$Playing),
 					$author$project$Main$generateTwoNewApplesPositions);
 			case 'Frame':
 				var time = msg.a;
@@ -6563,7 +6576,7 @@ var $elm$html$Html$Events$onClick = function (msg) {
 var $author$project$Main$viewMenu = function (model) {
 	var _v0 = model.game;
 	switch (_v0.$) {
-		case 'NOT_STARTED':
+		case 'NotStarted':
 			return A2(
 				$elm$html$Html$div,
 				_List_fromArray(
@@ -6584,7 +6597,7 @@ var $author$project$Main$viewMenu = function (model) {
 								$elm$html$Html$text('Start')
 							]))
 					]));
-		case 'GAME_OVER':
+		case 'GameOver':
 			return A2(
 				$elm$html$Html$div,
 				_List_fromArray(

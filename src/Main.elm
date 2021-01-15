@@ -99,13 +99,11 @@ type Key
 
 init : flags -> ( Model, Cmd Msg )
 init _ =
-    ( getDefaultModel NotStarted, generateTwoNewApplesPositions )
+    ( getModelForGameStart NotStarted, generateTwoNewApplesPositions )
 
 
-{-| Model when starting OR re-starting the game
--}
-getDefaultModel : Game -> Model
-getDefaultModel game =
+getModelForGameStart : Game -> Model
+getModelForGameStart game =
     { -- UI
       game = game
     , score = 0
@@ -160,7 +158,7 @@ update msg model =
             ( { model | game = Playing }, Cmd.none )
 
         ButtonReStartClicked ->
-            ( getDefaultModel Playing, generateTwoNewApplesPositions )
+            ( getModelForGameStart Playing, generateTwoNewApplesPositions )
 
         Frame time ->
             updateFrame time model
@@ -354,7 +352,7 @@ updateKeyPushed key model =
 
                 GameOver ->
                     -- re-start
-                    ( getDefaultModel Playing, generateTwoNewApplesPositions )
+                    ( getModelForGameStart Playing, generateTwoNewApplesPositions )
 
 
 
@@ -715,7 +713,11 @@ stringToKey string =
             Arrow Right
 
 
-{-| Making sure the player cannot reverse the direction.
+{-| Making sure that the player:
+
+  - is actually changing the direction
+  - isn't trying to reverse it
+
 -}
 canUpdateDirection : Direction -> List Direction -> Bool
 canUpdateDirection newDirection directions =
@@ -724,10 +726,18 @@ canUpdateDirection newDirection directions =
             List.reverse directions |> List.head |> Maybe.withDefault Left
     in
     (newDirection /= latestDirection)
-        && not (newDirection == Up && latestDirection == Down)
-        && not (newDirection == Down && latestDirection == Up)
-        && not (newDirection == Left && latestDirection == Right)
-        && not (newDirection == Right && latestDirection == Left)
+        && not (isOppositeDirection newDirection latestDirection)
+
+
+isOppositeDirection : Direction -> Direction -> Bool
+isOppositeDirection direction1 direction2 =
+    List.member
+        ( direction1, direction2 )
+        [ ( Up, Down )
+        , ( Down, Up )
+        , ( Left, Right )
+        , ( Right, Left )
+        ]
 
 
 {-| First direction is the oldest one.
