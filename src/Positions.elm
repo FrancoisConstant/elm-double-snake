@@ -1,6 +1,6 @@
 module Positions exposing
     ( Position
-    , generateRandomPosition
+    , getRandomPositionsNotIn
     , isAbove
     , isCloseToBottom
     , isCloseToLeft
@@ -28,17 +28,6 @@ type alias Position =
     { x : Int
     , y : Int
     }
-
-
-
----
---- COMMANDS
----
-
-
-generateRandomPosition : (Position -> msg) -> Cmd msg
-generateRandomPosition msg =
-    Random.generate msg getRandomPosition
 
 
 
@@ -109,15 +98,58 @@ movePositions positions newFirstPosition addPosition =
                )
 
 
+getRandomPositionsNotIn : Random.Seed -> Int -> List Position -> List Position
+getRandomPositionsNotIn seed0 numberOfPositions excludePositions =
+    if numberOfPositions == 1 then
+        let
+            ( position, seed1 ) =
+                getRandomPositionNotIn seed0 excludePositions
+        in
+        [ position ]
+
+    else if numberOfPositions == 2 then
+        let
+            ( position1, seed1 ) =
+                getRandomPositionNotIn seed0 excludePositions
+
+            ( position2, seed2 ) =
+                getRandomPositionNotIn seed1 excludePositions
+        in
+        [ position1, position2 ]
+
+    else
+        []
+
+
 
 --
 -- UTILS (private)
 --
 
 
-getRandomPosition : Random.Generator Position
-getRandomPosition =
-    Random.map2 Position getRandomXPosition getRandomYPosition
+getRandomPositionNotIn : Random.Seed -> List Position -> ( Position, Random.Seed )
+getRandomPositionNotIn seed0 excludePositions =
+    let
+        ( position, seed1 ) =
+            getRandomPosition seed0
+    in
+    if List.member position excludePositions then
+        getRandomPositionNotIn seed1 excludePositions
+
+    else
+        ( position, seed1 )
+
+
+getRandomPosition : Random.Seed -> ( Position, Random.Seed )
+getRandomPosition seed0 =
+    let
+        ( x, seed1 ) =
+            Random.step getRandomXPosition seed0
+
+        ( y, seed2 ) =
+            Random.step getRandomYPosition seed1
+    in
+    ( Position x y, seed2 )
 
 
 getRandomXPosition : Random.Generator Int

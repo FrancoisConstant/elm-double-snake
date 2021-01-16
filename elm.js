@@ -4392,52 +4392,6 @@ var _Bitwise_shiftRightZfBy = F2(function(offset, a)
 {
 	return a >>> offset;
 });
-
-
-
-function _Time_now(millisToPosix)
-{
-	return _Scheduler_binding(function(callback)
-	{
-		callback(_Scheduler_succeed(millisToPosix(Date.now())));
-	});
-}
-
-var _Time_setInterval = F2(function(interval, task)
-{
-	return _Scheduler_binding(function(callback)
-	{
-		var id = setInterval(function() { _Scheduler_rawSpawn(task); }, interval);
-		return function() { clearInterval(id); };
-	});
-});
-
-function _Time_here()
-{
-	return _Scheduler_binding(function(callback)
-	{
-		callback(_Scheduler_succeed(
-			A2($elm$time$Time$customZone, -(new Date().getTimezoneOffset()), _List_Nil)
-		));
-	});
-}
-
-
-function _Time_getZoneName()
-{
-	return _Scheduler_binding(function(callback)
-	{
-		try
-		{
-			var name = $elm$time$Time$Name(Intl.DateTimeFormat().resolvedOptions().timeZone);
-		}
-		catch (e)
-		{
-			var name = $elm$time$Time$Offset(new Date().getTimezoneOffset());
-		}
-		callback(_Scheduler_succeed(name));
-	});
-}
 var $elm$core$Basics$EQ = {$: 'EQ'};
 var $elm$core$Basics$GT = {$: 'GT'};
 var $elm$core$Basics$LT = {$: 'LT'};
@@ -5228,207 +5182,17 @@ var $elm$core$Task$perform = F2(
 	});
 var $elm$browser$Browser$element = _Browser_element;
 var $author$project$Main$NotStarted = {$: 'NotStarted'};
-var $author$project$Main$NewApplePosition = function (a) {
-	return {$: 'NewApplePosition', a: a};
-};
-var $elm$core$Platform$Cmd$batch = _Platform_batch;
-var $elm$random$Random$Generate = function (a) {
-	return {$: 'Generate', a: a};
-};
-var $elm$random$Random$Seed = F2(
-	function (a, b) {
-		return {$: 'Seed', a: a, b: b};
-	});
-var $elm$core$Bitwise$shiftRightZfBy = _Bitwise_shiftRightZfBy;
-var $elm$random$Random$next = function (_v0) {
-	var state0 = _v0.a;
-	var incr = _v0.b;
-	return A2($elm$random$Random$Seed, ((state0 * 1664525) + incr) >>> 0, incr);
-};
-var $elm$random$Random$initialSeed = function (x) {
-	var _v0 = $elm$random$Random$next(
-		A2($elm$random$Random$Seed, 0, 1013904223));
-	var state1 = _v0.a;
-	var incr = _v0.b;
-	var state2 = (state1 + x) >>> 0;
-	return $elm$random$Random$next(
-		A2($elm$random$Random$Seed, state2, incr));
-};
-var $elm$time$Time$Name = function (a) {
-	return {$: 'Name', a: a};
-};
-var $elm$time$Time$Offset = function (a) {
-	return {$: 'Offset', a: a};
-};
-var $elm$time$Time$Zone = F2(
-	function (a, b) {
-		return {$: 'Zone', a: a, b: b};
-	});
-var $elm$time$Time$customZone = $elm$time$Time$Zone;
-var $elm$time$Time$Posix = function (a) {
-	return {$: 'Posix', a: a};
-};
-var $elm$time$Time$millisToPosix = $elm$time$Time$Posix;
-var $elm$time$Time$now = _Time_now($elm$time$Time$millisToPosix);
-var $elm$time$Time$posixToMillis = function (_v0) {
-	var millis = _v0.a;
-	return millis;
-};
-var $elm$random$Random$init = A2(
-	$elm$core$Task$andThen,
-	function (time) {
-		return $elm$core$Task$succeed(
-			$elm$random$Random$initialSeed(
-				$elm$time$Time$posixToMillis(time)));
-	},
-	$elm$time$Time$now);
-var $elm$random$Random$step = F2(
-	function (_v0, seed) {
-		var generator = _v0.a;
-		return generator(seed);
-	});
-var $elm$random$Random$onEffects = F3(
-	function (router, commands, seed) {
-		if (!commands.b) {
-			return $elm$core$Task$succeed(seed);
-		} else {
-			var generator = commands.a.a;
-			var rest = commands.b;
-			var _v1 = A2($elm$random$Random$step, generator, seed);
-			var value = _v1.a;
-			var newSeed = _v1.b;
-			return A2(
-				$elm$core$Task$andThen,
-				function (_v2) {
-					return A3($elm$random$Random$onEffects, router, rest, newSeed);
-				},
-				A2($elm$core$Platform$sendToApp, router, value));
-		}
-	});
-var $elm$random$Random$onSelfMsg = F3(
-	function (_v0, _v1, seed) {
-		return $elm$core$Task$succeed(seed);
-	});
-var $elm$random$Random$Generator = function (a) {
-	return {$: 'Generator', a: a};
-};
-var $elm$random$Random$map = F2(
-	function (func, _v0) {
-		var genA = _v0.a;
-		return $elm$random$Random$Generator(
-			function (seed0) {
-				var _v1 = genA(seed0);
-				var a = _v1.a;
-				var seed1 = _v1.b;
-				return _Utils_Tuple2(
-					func(a),
-					seed1);
-			});
-	});
-var $elm$random$Random$cmdMap = F2(
-	function (func, _v0) {
-		var generator = _v0.a;
-		return $elm$random$Random$Generate(
-			A2($elm$random$Random$map, func, generator));
-	});
-_Platform_effectManagers['Random'] = _Platform_createManager($elm$random$Random$init, $elm$random$Random$onEffects, $elm$random$Random$onSelfMsg, $elm$random$Random$cmdMap);
-var $elm$random$Random$command = _Platform_leaf('Random');
-var $elm$random$Random$generate = F2(
-	function (tagger, generator) {
-		return $elm$random$Random$command(
-			$elm$random$Random$Generate(
-				A2($elm$random$Random$map, tagger, generator)));
-	});
 var $author$project$Positions$Position = F2(
 	function (x, y) {
 		return {x: x, y: y};
 	});
-var $elm$core$Bitwise$and = _Bitwise_and;
-var $elm$core$Basics$negate = function (n) {
-	return -n;
-};
-var $elm$core$Bitwise$xor = _Bitwise_xor;
-var $elm$random$Random$peel = function (_v0) {
-	var state = _v0.a;
-	var word = (state ^ (state >>> ((state >>> 28) + 4))) * 277803737;
-	return ((word >>> 22) ^ word) >>> 0;
-};
-var $elm$random$Random$int = F2(
-	function (a, b) {
-		return $elm$random$Random$Generator(
-			function (seed0) {
-				var _v0 = (_Utils_cmp(a, b) < 0) ? _Utils_Tuple2(a, b) : _Utils_Tuple2(b, a);
-				var lo = _v0.a;
-				var hi = _v0.b;
-				var range = (hi - lo) + 1;
-				if (!((range - 1) & range)) {
-					return _Utils_Tuple2(
-						(((range - 1) & $elm$random$Random$peel(seed0)) >>> 0) + lo,
-						$elm$random$Random$next(seed0));
-				} else {
-					var threshhold = (((-range) >>> 0) % range) >>> 0;
-					var accountForBias = function (seed) {
-						accountForBias:
-						while (true) {
-							var x = $elm$random$Random$peel(seed);
-							var seedN = $elm$random$Random$next(seed);
-							if (_Utils_cmp(x, threshhold) < 0) {
-								var $temp$seed = seedN;
-								seed = $temp$seed;
-								continue accountForBias;
-							} else {
-								return _Utils_Tuple2((x % range) + lo, seedN);
-							}
-						}
-					};
-					return accountForBias(seed0);
-				}
-			});
-	});
-var $author$project$Settings$sizeX = 42;
-var $author$project$Positions$getRandomXPosition = A2($elm$random$Random$int, 1, $author$project$Settings$sizeX);
-var $author$project$Settings$sizeY = 24;
-var $author$project$Positions$getRandomYPosition = A2($elm$random$Random$int, 1, $author$project$Settings$sizeY);
-var $elm$random$Random$map2 = F3(
-	function (func, _v0, _v1) {
-		var genA = _v0.a;
-		var genB = _v1.a;
-		return $elm$random$Random$Generator(
-			function (seed0) {
-				var _v2 = genA(seed0);
-				var a = _v2.a;
-				var seed1 = _v2.b;
-				var _v3 = genB(seed1);
-				var b = _v3.a;
-				var seed2 = _v3.b;
-				return _Utils_Tuple2(
-					A2(func, a, b),
-					seed2);
-			});
-	});
-var $author$project$Positions$getRandomPosition = A3($elm$random$Random$map2, $author$project$Positions$Position, $author$project$Positions$getRandomXPosition, $author$project$Positions$getRandomYPosition);
-var $author$project$Positions$generateRandomPosition = function (msg) {
-	return A2($elm$random$Random$generate, msg, $author$project$Positions$getRandomPosition);
-};
-var $author$project$Main$generateTwoNewApplesPositions = $elm$core$Platform$Cmd$batch(
-	_List_fromArray(
-		[
-			$author$project$Positions$generateRandomPosition($author$project$Main$NewApplePosition),
-			$author$project$Positions$generateRandomPosition($author$project$Main$NewApplePosition)
-		]));
 var $author$project$Main$Right = {$: 'Right'};
 var $author$project$Main$getModelForGameStart = function (game) {
 	return {
 		apples: _List_fromArray(
 			[
-				{
-				eaten: true,
-				position: A2($author$project$Positions$Position, 49, 49)
-			},
-				{
-				eaten: true,
-				position: A2($author$project$Positions$Position, 50, 50)
-			}
+				A2($author$project$Positions$Position, 10, 6),
+				A2($author$project$Positions$Position, 30, 22)
 			]),
 		elapsedTimeSinceLastUpdate: 0,
 		game: game,
@@ -5454,10 +5218,12 @@ var $author$project$Main$getModelForGameStart = function (game) {
 		totalTime: 0
 	};
 };
+var $elm$core$Platform$Cmd$batch = _Platform_batch;
+var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
 var $author$project$Main$init = function (_v0) {
 	return _Utils_Tuple2(
 		$author$project$Main$getModelForGameStart($author$project$Main$NotStarted),
-		$author$project$Main$generateTwoNewApplesPositions);
+		$elm$core$Platform$Cmd$none);
 };
 var $author$project$Main$Frame = function (a) {
 	return {$: 'Frame', a: a};
@@ -5556,6 +5322,10 @@ var $elm$browser$Browser$AnimationManager$onEffects = F3(
 			}
 		}
 	});
+var $elm$time$Time$Posix = function (a) {
+	return {$: 'Posix', a: a};
+};
+var $elm$time$Time$millisToPosix = $elm$time$Time$Posix;
 var $elm$browser$Browser$AnimationManager$onSelfMsg = F3(
 	function (router, newTime, _v0) {
 		var subs = _v0.subs;
@@ -6034,80 +5804,6 @@ var $author$project$Main$subscriptions = function (_v0) {
 			]));
 };
 var $author$project$Main$Playing = {$: 'Playing'};
-var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
-var $author$project$Main$generateNewApplePosition = $author$project$Positions$generateRandomPosition($author$project$Main$NewApplePosition);
-var $elm$core$List$any = F2(
-	function (isOkay, list) {
-		any:
-		while (true) {
-			if (!list.b) {
-				return false;
-			} else {
-				var x = list.a;
-				var xs = list.b;
-				if (isOkay(x)) {
-					return true;
-				} else {
-					var $temp$isOkay = isOkay,
-						$temp$list = xs;
-					isOkay = $temp$isOkay;
-					list = $temp$list;
-					continue any;
-				}
-			}
-		}
-	});
-var $elm$core$List$member = F2(
-	function (x, xs) {
-		return A2(
-			$elm$core$List$any,
-			function (a) {
-				return _Utils_eq(a, x);
-			},
-			xs);
-	});
-var $elm$core$Basics$not = _Basics_not;
-var $author$project$Main$updateApplePosition = F2(
-	function (newPosition, model) {
-		var isOnAnySnake = A2(
-			$elm$core$List$member,
-			newPosition,
-			_Utils_ap(model.snake.positions, model.otherSnake.positions));
-		if (isOnAnySnake) {
-			return _Utils_Tuple2(model, $author$project$Main$generateNewApplePosition);
-		} else {
-			var _v0 = A3(
-				$elm$core$List$foldl,
-				F2(
-					function (apple, _v1) {
-						var accApples = _v1.a;
-						var accOtherAppleChanged = _v1.b;
-						var changeApple = apple.eaten && (!accOtherAppleChanged);
-						var newApple = changeApple ? _Utils_update(
-							apple,
-							{eaten: false, position: newPosition}) : apple;
-						var apples = A2($elm$core$List$cons, newApple, accApples);
-						return _Utils_Tuple2(apples, changeApple);
-					}),
-				_Utils_Tuple2(_List_Nil, false),
-				model.apples);
-			var newApples = _v0.a;
-			var anAppleChanged = _v0.b;
-			var newModel = _Utils_update(
-				model,
-				{apples: newApples});
-			return _Utils_Tuple2(newModel, $elm$core$Platform$Cmd$none);
-		}
-	});
-var $elm$core$Basics$ge = _Utils_ge;
-var $author$project$Main$getApplePositions = function (model) {
-	return A2(
-		$elm$core$List$map,
-		function (apple) {
-			return apple.position;
-		},
-		model.apples);
-};
 var $elm$core$List$head = function (list) {
 	if (list.b) {
 		var x = list.a;
@@ -6131,26 +5827,6 @@ var $author$project$Main$getDirection = function (snake) {
 		$elm$core$Maybe$withDefault,
 		$author$project$Main$Right,
 		$elm$core$List$head(snake.directions));
-};
-var $elm$core$List$filter = F2(
-	function (isGood, list) {
-		return A3(
-			$elm$core$List$foldr,
-			F2(
-				function (x, xs) {
-					return isGood(x) ? A2($elm$core$List$cons, x, xs) : xs;
-				}),
-			_List_Nil,
-			list);
-	});
-var $author$project$Main$getEatenApplesCount = function (apples) {
-	return $elm$core$List$length(
-		A2(
-			$elm$core$List$filter,
-			function (apple) {
-				return apple.eaten;
-			},
-			apples));
 };
 var $author$project$Main$getNewHeadPosition = F2(
 	function (positions, direction) {
@@ -6183,6 +5859,7 @@ var $author$project$Positions$isAbove = F2(
 	function (pos1, pos2) {
 		return _Utils_cmp(pos1.y, pos2.y) < 0;
 	});
+var $author$project$Settings$sizeY = 24;
 var $author$project$Settings$bottomLimit = $author$project$Settings$sizeY - 1;
 var $author$project$Positions$isCloseToBottom = function (headPosition) {
 	return _Utils_cmp(headPosition.y, $author$project$Settings$bottomLimit) > 0;
@@ -6191,6 +5868,7 @@ var $author$project$Settings$leftLimit = 1;
 var $author$project$Positions$isCloseToLeft = function (headPosition) {
 	return _Utils_cmp(headPosition.x, $author$project$Settings$leftLimit) < 0;
 };
+var $author$project$Settings$sizeX = 42;
 var $author$project$Settings$rightLimit = $author$project$Settings$sizeX - 1;
 var $author$project$Positions$isCloseToRight = function (headPosition) {
 	return _Utils_cmp(headPosition.x, $author$project$Settings$rightLimit) > 0;
@@ -6236,6 +5914,159 @@ var $author$project$Main$getNewOtherSnakeDirection = F3(
 				return left ? (bottom ? $author$project$Main$Up : $author$project$Main$Down) : (appleOnTheLeft ? currentDirection : (appleAbove ? $author$project$Main$Up : $author$project$Main$Down));
 		}
 	});
+var $elm$random$Random$Generator = function (a) {
+	return {$: 'Generator', a: a};
+};
+var $elm$core$Bitwise$and = _Bitwise_and;
+var $elm$core$Basics$negate = function (n) {
+	return -n;
+};
+var $elm$random$Random$Seed = F2(
+	function (a, b) {
+		return {$: 'Seed', a: a, b: b};
+	});
+var $elm$core$Bitwise$shiftRightZfBy = _Bitwise_shiftRightZfBy;
+var $elm$random$Random$next = function (_v0) {
+	var state0 = _v0.a;
+	var incr = _v0.b;
+	return A2($elm$random$Random$Seed, ((state0 * 1664525) + incr) >>> 0, incr);
+};
+var $elm$core$Bitwise$xor = _Bitwise_xor;
+var $elm$random$Random$peel = function (_v0) {
+	var state = _v0.a;
+	var word = (state ^ (state >>> ((state >>> 28) + 4))) * 277803737;
+	return ((word >>> 22) ^ word) >>> 0;
+};
+var $elm$random$Random$int = F2(
+	function (a, b) {
+		return $elm$random$Random$Generator(
+			function (seed0) {
+				var _v0 = (_Utils_cmp(a, b) < 0) ? _Utils_Tuple2(a, b) : _Utils_Tuple2(b, a);
+				var lo = _v0.a;
+				var hi = _v0.b;
+				var range = (hi - lo) + 1;
+				if (!((range - 1) & range)) {
+					return _Utils_Tuple2(
+						(((range - 1) & $elm$random$Random$peel(seed0)) >>> 0) + lo,
+						$elm$random$Random$next(seed0));
+				} else {
+					var threshhold = (((-range) >>> 0) % range) >>> 0;
+					var accountForBias = function (seed) {
+						accountForBias:
+						while (true) {
+							var x = $elm$random$Random$peel(seed);
+							var seedN = $elm$random$Random$next(seed);
+							if (_Utils_cmp(x, threshhold) < 0) {
+								var $temp$seed = seedN;
+								seed = $temp$seed;
+								continue accountForBias;
+							} else {
+								return _Utils_Tuple2((x % range) + lo, seedN);
+							}
+						}
+					};
+					return accountForBias(seed0);
+				}
+			});
+	});
+var $author$project$Positions$getRandomXPosition = A2($elm$random$Random$int, 1, $author$project$Settings$sizeX);
+var $author$project$Positions$getRandomYPosition = A2($elm$random$Random$int, 1, $author$project$Settings$sizeY);
+var $elm$random$Random$step = F2(
+	function (_v0, seed) {
+		var generator = _v0.a;
+		return generator(seed);
+	});
+var $author$project$Positions$getRandomPosition = function (seed0) {
+	var _v0 = A2($elm$random$Random$step, $author$project$Positions$getRandomXPosition, seed0);
+	var x = _v0.a;
+	var seed1 = _v0.b;
+	var _v1 = A2($elm$random$Random$step, $author$project$Positions$getRandomYPosition, seed1);
+	var y = _v1.a;
+	var seed2 = _v1.b;
+	return _Utils_Tuple2(
+		A2($author$project$Positions$Position, x, y),
+		seed2);
+};
+var $elm$core$List$any = F2(
+	function (isOkay, list) {
+		any:
+		while (true) {
+			if (!list.b) {
+				return false;
+			} else {
+				var x = list.a;
+				var xs = list.b;
+				if (isOkay(x)) {
+					return true;
+				} else {
+					var $temp$isOkay = isOkay,
+						$temp$list = xs;
+					isOkay = $temp$isOkay;
+					list = $temp$list;
+					continue any;
+				}
+			}
+		}
+	});
+var $elm$core$List$member = F2(
+	function (x, xs) {
+		return A2(
+			$elm$core$List$any,
+			function (a) {
+				return _Utils_eq(a, x);
+			},
+			xs);
+	});
+var $author$project$Positions$getRandomPositionNotIn = F2(
+	function (seed0, excludePositions) {
+		getRandomPositionNotIn:
+		while (true) {
+			var _v0 = $author$project$Positions$getRandomPosition(seed0);
+			var position = _v0.a;
+			var seed1 = _v0.b;
+			if (A2($elm$core$List$member, position, excludePositions)) {
+				var $temp$seed0 = seed1,
+					$temp$excludePositions = excludePositions;
+				seed0 = $temp$seed0;
+				excludePositions = $temp$excludePositions;
+				continue getRandomPositionNotIn;
+			} else {
+				return _Utils_Tuple2(position, seed1);
+			}
+		}
+	});
+var $author$project$Positions$getRandomPositionsNotIn = F3(
+	function (seed0, numberOfPositions, excludePositions) {
+		if (numberOfPositions === 1) {
+			var _v0 = A2($author$project$Positions$getRandomPositionNotIn, seed0, excludePositions);
+			var position = _v0.a;
+			var seed1 = _v0.b;
+			return _List_fromArray(
+				[position]);
+		} else {
+			if (numberOfPositions === 2) {
+				var _v1 = A2($author$project$Positions$getRandomPositionNotIn, seed0, excludePositions);
+				var position1 = _v1.a;
+				var seed1 = _v1.b;
+				var _v2 = A2($author$project$Positions$getRandomPositionNotIn, seed1, excludePositions);
+				var position2 = _v2.a;
+				var seed2 = _v2.b;
+				return _List_fromArray(
+					[position1, position2]);
+			} else {
+				return _List_Nil;
+			}
+		}
+	});
+var $elm$random$Random$initialSeed = function (x) {
+	var _v0 = $elm$random$Random$next(
+		A2($elm$random$Random$Seed, 0, 1013904223));
+	var state1 = _v0.a;
+	var incr = _v0.b;
+	var state2 = (state1 + x) >>> 0;
+	return $elm$random$Random$next(
+		A2($elm$random$Random$Seed, state2, incr));
+};
 var $elm$core$List$drop = F2(
 	function (n, list) {
 		drop:
@@ -6271,20 +6102,31 @@ var $author$project$Main$isSnakeCrashing = F2(
 			},
 			snake.positions));
 	});
-var $author$project$Main$markEatenApples = F2(
+var $elm$core$Basics$not = _Basics_not;
+var $elm$core$List$filter = F2(
+	function (isGood, list) {
+		return A3(
+			$elm$core$List$foldr,
+			F2(
+				function (x, xs) {
+					return isGood(x) ? A2($elm$core$List$cons, x, xs) : xs;
+				}),
+			_List_Nil,
+			list);
+	});
+var $author$project$Main$removeEatenApples = F2(
 	function (headPositions, apples) {
 		return A2(
-			$elm$core$List$map,
+			$elm$core$List$filter,
 			function (apple) {
-				return A2($elm$core$List$member, apple.position, headPositions) ? _Utils_update(
-					apple,
-					{eaten: true}) : apple;
+				return !A2($elm$core$List$member, apple, headPositions);
 			},
 			apples);
 	});
 var $author$project$Main$removePreviousDirection = function (directions) {
 	return ($elm$core$List$length(directions) > 1) ? A2($elm$core$List$drop, 1, directions) : directions;
 };
+var $elm$core$Basics$round = _Basics_round;
 var $author$project$Main$setApples = F2(
 	function (apples, model) {
 		return _Utils_update(
@@ -6361,20 +6203,14 @@ var $author$project$Main$doUpdateFrame = F2(
 			$author$project$Main$getNewOtherSnakeDirection,
 			otherSnakeHead,
 			$author$project$Main$getDirection(model.otherSnake),
-			$author$project$Main$getApplePositions(model));
+			model.apples);
 		var newHeadPosition = A2(
 			$author$project$Main$getNewHeadPosition,
 			model.snake.positions,
 			$author$project$Main$getDirection(snake2));
-		var doesSnakeEat = A2(
-			$elm$core$List$member,
-			newHeadPosition,
-			$author$project$Main$getApplePositions(model));
+		var doesSnakeEat = A2($elm$core$List$member, newHeadPosition, model.apples);
 		var futureSnake = A2($author$project$Main$updateSnakePosition, doesSnakeEat, snake2);
-		var doesOtherSnakeEat = A2(
-			$elm$core$List$member,
-			otherSnakeHead,
-			$author$project$Main$getApplePositions(model));
+		var doesOtherSnakeEat = A2($elm$core$List$member, otherSnakeHead, model.apples);
 		var futureOtherSnake = A2($author$project$Main$updateSnakePosition, doesOtherSnakeEat, model.otherSnake);
 		var otherSnake3 = _Utils_update(
 			futureOtherSnake,
@@ -6396,13 +6232,19 @@ var $author$project$Main$doUpdateFrame = F2(
 						$author$project$Main$setGameOver(model))),
 				$elm$core$Platform$Cmd$none);
 		} else {
-			var apples = A2(
-				$author$project$Main$markEatenApples,
+			var excludePositions = _Utils_ap(model.snake.positions, model.otherSnake.positions);
+			var applesLeft = A2(
+				$author$project$Main$removeEatenApples,
 				_List_fromArray(
 					[newHeadPosition, otherSnakeHead]),
 				model.apples);
-			var eatenApplesCount = $author$project$Main$getEatenApplesCount(apples);
-			var cmd = ((eatenApplesCount >= 2) && (!doesCrash)) ? $author$project$Main$generateTwoNewApplesPositions : (((eatenApplesCount === 1) && (!doesCrash)) ? $author$project$Main$generateNewApplePosition : $elm$core$Platform$Cmd$none);
+			var newApples = A3(
+				$author$project$Positions$getRandomPositionsNotIn,
+				$elm$random$Random$initialSeed(
+					$elm$core$Basics$round(model.totalTime)),
+				2 - $elm$core$List$length(applesLeft),
+				excludePositions);
+			var apples = _Utils_ap(applesLeft, newApples);
 			return _Utils_Tuple2(
 				A3(
 					$author$project$Main$updateTimes,
@@ -6418,9 +6260,10 @@ var $author$project$Main$doUpdateFrame = F2(
 								$author$project$Main$setSnake,
 								futureSnake,
 								A2($author$project$Main$setApples, apples, model))))),
-				cmd);
+				$elm$core$Platform$Cmd$none);
 		}
 	});
+var $elm$core$Basics$ge = _Utils_ge;
 var $author$project$Main$updateTimesOnly = F2(
 	function (timeDelta, model) {
 		return _Utils_Tuple2(
@@ -6510,7 +6353,7 @@ var $author$project$Main$updateKeyPushed = F2(
 				default:
 					return _Utils_Tuple2(
 						$author$project$Main$getModelForGameStart($author$project$Main$Playing),
-						$author$project$Main$generateTwoNewApplesPositions);
+						$elm$core$Platform$Cmd$none);
 			}
 		}
 	});
@@ -6526,16 +6369,13 @@ var $author$project$Main$update = F2(
 			case 'ButtonReStartClicked':
 				return _Utils_Tuple2(
 					$author$project$Main$getModelForGameStart($author$project$Main$Playing),
-					$author$project$Main$generateTwoNewApplesPositions);
+					$elm$core$Platform$Cmd$none);
 			case 'Frame':
 				var time = msg.a;
 				return A2($author$project$Main$updateFrame, time, model);
-			case 'KeyPushed':
+			default:
 				var key = msg.a;
 				return A2($author$project$Main$updateKeyPushed, key, model);
-			default:
-				var position = msg.a;
-				return A2($author$project$Main$updateApplePosition, position, model);
 		}
 	});
 var $elm$json$Json$Encode$string = _Json_wrap;
@@ -6673,10 +6513,7 @@ var $author$project$Main$viewMenu = function (model) {
 var $elm$html$Html$tr = _VirtualDom_node('tr');
 var $author$project$Main$isAppleOn = F2(
 	function (position, model) {
-		return A2(
-			$elm$core$List$member,
-			position,
-			$author$project$Main$getApplePositions(model));
+		return A2($elm$core$List$member, position, model.apples);
 	});
 var $author$project$Main$isSnakeHead = F2(
 	function (position, snake) {

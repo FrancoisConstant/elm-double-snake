@@ -8,6 +8,7 @@ import Html.Events exposing (onClick)
 import Json.Decode as Decode
 import List exposing (range)
 import Positions exposing (..)
+import Random
 import Settings exposing (sizeX, sizeY)
 
 
@@ -38,7 +39,6 @@ type Msg
     | ButtonStartClicked
     | ButtonReStartClicked
     | KeyPushed Key
-    | NewApplePosition Position
 
 
 
@@ -65,9 +65,7 @@ type alias Snake =
 
 
 type alias Apple =
-    { position : Position
-    , eaten : Bool -- once eaten, the apple will be replaced
-    }
+    Position
 
 
 type alias AppleKey =
@@ -99,7 +97,7 @@ type Key
 
 init : flags -> ( Model, Cmd Msg )
 init _ =
-    ( getModelForGameStart NotStarted, generateTwoNewApplesPositions )
+    ( getModelForGameStart NotStarted, Cmd.none )
 
 
 getModelForGameStart : Game -> Model
@@ -123,18 +121,13 @@ getModelForGameStart game =
         }
 
     -- apples
-    -- (non-sense positions - replaced via the commands)
-    , apples =
-        [ { position = Position 49 49, eaten = True }
-        , { position = Position 50 50, eaten = True }
-        ]
+    , apples = [ Position 10 6, Position 30 22 ]
     }
 
 
 
 --
 -- SUBSCRIPTIONS
--- (new frames & new user inputs)
 --
 
 
@@ -158,16 +151,13 @@ update msg model =
             ( { model | game = Playing }, Cmd.none )
 
         ButtonReStartClicked ->
-            ( getModelForGameStart Playing, generateTwoNewApplesPositions )
+            ( getModelForGameStart Playing, Cmd.none )
 
         Frame time ->
             updateFrame time model
 
         KeyPushed key ->
             updateKeyPushed key model
-
-        NewApplePosition position ->
-            updateApplePosition position model
 
 
 updateFrame : Float -> Model -> ( Model, Cmd Msg )
@@ -205,7 +195,7 @@ doUpdateFrame timeDelta model =
             getNewHeadPosition model.snake.positions (getDirection snake2)
 
         doesSnakeEat =
-            List.member newHeadPosition (getApplePositions model)
+            List.member newHeadPosition model.apples
 
         futureSnake =
             updateSnakePosition doesSnakeEat snake2
@@ -214,7 +204,7 @@ doUpdateFrame timeDelta model =
             getNewHeadPosition model.otherSnake.positions (getDirection model.otherSnake)
 
         doesOtherSnakeEat =
-            List.member otherSnakeHead (getApplePositions model)
+            List.member otherSnakeHead model.apples
 
         futureOtherSnake =
             updateSnakePosition doesOtherSnakeEat model.otherSnake
@@ -230,7 +220,7 @@ doUpdateFrame timeDelta model =
                 model.score
 
         newOtherSnakeDirection =
-            getNewOtherSnakeDirection otherSnakeHead (getDirection model.otherSnake) (getApplePositions model)
+            getNewOtherSnakeDirection otherSnakeHead (getDirection model.otherSnake) model.apples
 
         otherSnake3 =
             { futureOtherSnake
@@ -249,21 +239,20 @@ doUpdateFrame timeDelta model =
 
     else
         let
+            applesLeft =
+                removeEatenApples [ newHeadPosition, otherSnakeHead ] model.apples
+
+            excludePositions =
+                model.snake.positions ++ model.otherSnake.positions
+
+            newApples =
+                getRandomPositionsNotIn
+                    (Random.initialSeed (model.totalTime |> round))
+                    (2 - List.length applesLeft)
+                    excludePositions
+
             apples =
-                markEatenApples [ newHeadPosition, otherSnakeHead ] model.apples
-
-            eatenApplesCount =
-                getEatenApplesCount apples
-
-            cmd =
-                if eatenApplesCount >= 2 && not doesCrash then
-                    generateTwoNewApplesPositions
-
-                else if eatenApplesCount == 1 && not doesCrash then
-                    generateNewApplePosition
-
-                else
-                    Cmd.none
+                applesLeft ++ newApples
         in
         -- keep playing, update Snakes' positions
         ( model
@@ -272,50 +261,8 @@ doUpdateFrame timeDelta model =
             |> setOtherSnake otherSnake3
             |> setScore score
             |> updateTimes timeDelta True
-        , cmd
+        , Cmd.none
         )
-
-
-{-| Use the randomly generated position to replace one of the apples
-Generate a new position and ignore the current one if there is a Snake there already
--}
-updateApplePosition : Position -> Model -> ( Model, Cmd Msg )
-updateApplePosition newPosition model =
-    let
-        isOnAnySnake =
-            List.member newPosition (model.snake.positions ++ model.otherSnake.positions)
-    in
-    if isOnAnySnake then
-        ( model, generateNewApplePosition )
-
-    else
-        let
-            ( newApples, anAppleChanged ) =
-                List.foldl
-                    (\apple ( accApples, accOtherAppleChanged ) ->
-                        let
-                            changeApple =
-                                apple.eaten && not accOtherAppleChanged
-
-                            newApple =
-                                if changeApple then
-                                    { apple | position = newPosition, eaten = False }
-
-                                else
-                                    apple
-
-                            apples =
-                                newApple :: accApples
-                        in
-                        ( apples, changeApple )
-                    )
-                    ( [], False )
-                    model.apples
-
-            newModel =
-                { model | apples = newApples }
-        in
-        ( newModel, Cmd.none )
 
 
 {-| On user input, either start the game; pause the game or handle the new
@@ -352,7 +299,7 @@ updateKeyPushed key model =
 
                 GameOver ->
                     -- re-start
-                    ( getModelForGameStart Playing, generateTwoNewApplesPositions )
+                    ( getModelForGameStart Playing, Cmd.none )
 
 
 
@@ -560,7 +507,7 @@ isSnakeHead position snake =
 
 isAppleOn : Position -> Model -> Bool
 isAppleOn position model =
-    List.member position (getApplePositions model)
+    List.member position model.apples
 
 
 isSnakeCrashing : Snake -> Snake -> Bool
@@ -770,44 +717,11 @@ setScore score model =
     { model | score = score }
 
 
-getApplePositions : Model -> List Position
-getApplePositions model =
-    List.map (\apple -> apple.position) model.apples
-
-
 setApples : List Apple -> Model -> Model
 setApples apples model =
     { model | apples = apples }
 
 
-getEatenApplesCount : List Apple -> Int
-getEatenApplesCount apples =
-    List.length
-        (List.filter (\apple -> apple.eaten) apples)
-
-
-markEatenApples : List Position -> List Apple -> List Apple
-markEatenApples headPositions apples =
-    List.map
-        (\apple ->
-            if List.member apple.position headPositions then
-                -- only replace if true
-                { apple | eaten = True }
-
-            else
-                apple
-        )
-        apples
-
-
-generateNewApplePosition : Cmd Msg
-generateNewApplePosition =
-    generateRandomPosition NewApplePosition
-
-
-generateTwoNewApplesPositions : Cmd Msg
-generateTwoNewApplesPositions =
-    Cmd.batch
-        [ generateRandomPosition NewApplePosition
-        , generateRandomPosition NewApplePosition
-        ]
+removeEatenApples : List Position -> List Apple -> List Apple
+removeEatenApples headPositions apples =
+    apples |> List.filter (\apple -> not (List.member apple headPositions))
